@@ -52,7 +52,7 @@ http.interceptors.response.use(
         if (!refreshToken) return null
         try {
           const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
-          notifyAuthTokensUpdated(data.accessToken, data.refreshToken)
+          notifyAuthTokensUpdated(data.accessToken, data.refreshToken, data.user)
           return data.accessToken as string
         } catch {
           clearAuthPersist()

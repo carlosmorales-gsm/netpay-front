@@ -20,9 +20,12 @@ export const useAuthStore = defineStore(
     const loading = ref(false)
     const error = ref<string | null>(null)
 
-    onAuthTokensUpdated((nextAccess, nextRefresh) => {
+    onAuthTokensUpdated((nextAccess, nextRefresh, nextUser) => {
       accessToken.value = nextAccess
       refreshToken.value = nextRefresh
+      if (nextUser !== undefined) {
+        user.value = nextUser
+      }
     })
 
     const isAuthenticated = computed(() => Boolean(accessToken.value && user.value))
@@ -88,12 +91,35 @@ export const useAuthStore = defineStore(
       }
     }
 
-    async function fetchMe() {
+    let lastMeAt = 0
+    let meInFlight: Promise<AuthUser | null> | null = null
+
+    async function fetchMe(options?: { force?: boolean }) {
       if (!accessToken.value && !readAuthPersist().accessToken) return null
-      const { data } = await authApi.me()
-      user.value = data
-      writeAuthPersist({ user: data })
-      return data
+
+      const ttlMs = 15_000
+      if (!options?.force && user.value && Date.now() - lastMeAt < ttlMs) {
+        return meInFlight ?? user.value
+      }
+
+      if (meInFlight) {
+        if (!options?.force) return meInFlight
+        await meInFlight.catch(() => null)
+      }
+
+      meInFlight = (async () => {
+        try {
+          const { data } = await authApi.me()
+          user.value = data
+          writeAuthPersist({ user: data })
+          lastMeAt = Date.now()
+          return data
+        } finally {
+          meInFlight = null
+        }
+      })()
+
+      return meInFlight
     }
 
     function logout() {

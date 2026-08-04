@@ -126,30 +126,36 @@ export const useRolesStore = defineStore('roles', () => {
     }
 
     saving.value = true
+    const wasEditing = Boolean(editing.value)
+    let savedRoleId = editing.value?.id ?? null
     try {
       await ui.withLoading(async () => {
-        let roleId = editing.value?.id
         if (editing.value) {
           await rolesApi.update(editing.value.id, {
             nombre: form.nombre.trim(),
             descripcion: form.descripcion.trim(),
           })
+          savedRoleId = editing.value.id
         } else {
           const { data } = await rolesApi.create({
             nombre: form.nombre.trim(),
             descripcion: form.descripcion.trim(),
           })
-          roleId = data.id
+          savedRoleId = data.id
         }
 
-        if (roleId != null && auth.hasPermission('roles.manage')) {
-          await rolesApi.setPermissions(roleId, form.permissionIds)
+        if (savedRoleId != null && auth.hasPermission('roles.manage')) {
+          await rolesApi.setPermissions(savedRoleId, form.permissionIds)
         }
       })
 
       showModal.value = false
-      ui.success(editing.value ? 'Rol actualizado' : 'Rol creado')
+      ui.success(wasEditing ? 'Rol actualizado' : 'Rol creado')
       await fetchList()
+
+      if (savedRoleId != null && auth.user?.roleId === savedRoleId) {
+        await auth.fetchMe({ force: true })
+      }
     } catch (e: unknown) {
       modalError.value = getApiErrorMessage(e, 'No se pudo guardar')
       ui.error(modalError.value)

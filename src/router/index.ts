@@ -21,10 +21,16 @@ const router = createRouter({
       meta: { permission: 'terminals.view' },
     },
     {
+      path: '/refunds',
+      name: 'refunds',
+      component: () => import('@/modules/operacion/refunds/views/RefundsView.vue'),
+      meta: { permission: 'refunds.view' },
+    },
+    {
       path: '/movements',
       name: 'movements',
       component: () => import('@/modules/reportes/movements/views/MovementsView.vue'),
-      meta: { permission: 'movements.own' },
+      meta: { permission: 'movements.global' },
     },
     {
       path: '/users',
@@ -47,7 +53,8 @@ const router = createRouter({
 
 function firstAllowedRoute(auth: ReturnType<typeof useAuthStore>) {
   if (auth.hasPermission('terminals.view')) return '/terminals'
-  if (auth.hasPermission('movements.own')) return '/movements'
+  if (auth.hasPermission('refunds.view')) return '/refunds'
+  if (auth.hasPermission('movements.global')) return '/movements'
   if (auth.hasPermission('users.view')) return '/users'
   if (auth.hasPermission('roles.view')) return '/roles'
   return '/login'
@@ -67,10 +74,10 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  if (!auth.user?.permissions?.length) {
-    try {
-      await auth.fetchMe()
-    } catch {
+  try {
+    await auth.fetchMe()
+  } catch {
+    if (!auth.user) {
       auth.logout()
       return { name: 'login' }
     }

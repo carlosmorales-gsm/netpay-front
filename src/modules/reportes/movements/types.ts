@@ -8,16 +8,24 @@ export type Movement = {
   tarjeta: string | null
   folioVenta: string
   orderId: string | null
+  tipoTransaccion: number | null
   tipoTransaccionDesc: string | null
   aplicado: boolean
   storeId: string | null
   companyId: number | null
+  estatus?: {
+    key: string
+    label: string
+  }
 }
 
 export type MovementsResponse = {
   items: Movement[]
   total: number
   totalImporte: number
+  /** Suma solo de ingresos pagados aplicados en Odoo */
+  totalImporteAplicado: number
+  totalAplicados: number
 }
 
 export type MovementFilters = {
@@ -27,4 +35,7 @@ export type MovementFilters = {
   to: string
 }
 
-export type MovementScope = 'own' | 'global'
+export type MovementUserOption = {
+  usuarioId: number
+  nombreUsuario: string
+}

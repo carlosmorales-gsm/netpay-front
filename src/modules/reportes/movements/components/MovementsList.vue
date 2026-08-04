@@ -1,21 +1,37 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useAuthStore } from '@/modules/auth/stores/auth'
 import { useEmpresasStore } from '@/shared/stores/empresas'
 import { useMovementsStore } from '../stores/movements'
 
-const auth = useAuthStore()
 const store = useMovementsStore()
 const empresas = useEmpresasStore()
-const { scope, loading, error, data, filters } = storeToRefs(store)
+const { loading, error, data, filters, userOptions } = storeToRefs(store)
+
+function estatusClass(key?: string) {
+  if (key === 'applied') return 'badge-ok'
+  if (key === 'approved') return 'badge-warn'
+  if (key === 'refunded' || key === 'void') return 'badge-refunded'
+  if (key === 'cancelled') return 'badge-off'
+  if (key === 'declined') return 'badge-off'
+  return 'badge-off'
+}
 </script>
 
 <template>
-  <div>
-    <div class="card toolbar">
-      <div v-if="scope === 'global'" class="field">
-        <label>Usuario Odoo</label>
-        <input v-model="filters.usuarioId" type="number" />
+  <div class="movements-list">
+    <div class="card toolbar toolbar-relaxed">
+      <div class="field field-user">
+        <label>Usuario</label>
+        <select v-model="filters.usuarioId">
+          <option value="">Todos</option>
+          <option
+            v-for="u in userOptions"
+            :key="u.usuarioId"
+            :value="String(u.usuarioId)"
+          >
+            {{ u.nombreUsuario }}
+          </option>
+        </select>
       </div>
       <div class="field">
         <label>Empresa</label>
@@ -34,13 +50,12 @@ const { scope, loading, error, data, filters } = storeToRefs(store)
         <label>Hasta</label>
         <input v-model="filters.to" type="date" />
       </div>
-      <button class="btn btn-primary" type="button" @click="store.fetchList()">Filtrar</button>
+      <button class="btn btn-primary" type="button" @click="store.fetchList()">
+        Filtrar
+      </button>
     </div>
 
     <p v-if="error" class="error-text" role="alert">{{ error }}</p>
-    <p v-if="scope === 'own' && auth.user?.odooUserId == null" class="error-text">
-      Su usuario no tiene odooUserId; no se pueden mostrar movimientos propios.
-    </p>
 
     <div class="card table-wrap">
       <div v-if="loading" class="loading-row">
@@ -61,8 +76,7 @@ const { scope, loading, error, data, filters } = storeToRefs(store)
             <th>Usuario</th>
             <th>Empresa</th>
             <th>Importe</th>
-            <th>Resp.</th>
-            <th>Aplicado</th>
+            <th>Estatus</th>
           </tr>
         </thead>
         <tbody>
@@ -74,10 +88,12 @@ const { scope, loading, error, data, filters } = storeToRefs(store)
             <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
             <td>{{ empresas.nombre(row.companyId) }}</td>
             <td>{{ store.money(row.importe) }}</td>
-            <td>{{ row.tipoRespuesta || '—' }}</td>
             <td>
-              <span class="badge" :class="row.aplicado ? 'badge-ok' : 'badge-off'">
-                {{ row.aplicado ? 'Sí' : 'No' }}
+              <span class="badge" :class="estatusClass(row.estatus?.key)">
+                {{
+                  row.estatus?.label ||
+                  (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
+                }}
               </span>
             </td>
           </tr>
@@ -86,3 +102,82 @@ const { scope, loading, error, data, filters } = storeToRefs(store)
     </div>
   </div>
 </template>
+
+<style scoped>
+.movements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.toolbar-relaxed {
+  gap: 1rem 1.25rem;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 0;
+  align-items: flex-end;
+}
+
+.toolbar-relaxed .field {
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: none;
+  margin-bottom: 0;
+}
+
+.toolbar-relaxed .field-user {
+  flex: 1.4 1 240px;
+  min-width: 220px;
+}
+
+.toolbar-relaxed .field label {
+  font-size: 0.82rem;
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+.toolbar-relaxed .field input,
+.toolbar-relaxed .field select {
+  padding: 0.55rem 0.75rem;
+  min-height: 42px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.toolbar-relaxed .btn {
+  min-height: 42px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.95rem;
+  align-self: flex-end;
+}
+
+.table-wrap {
+  padding: 0.35rem 0.5rem 0.75rem;
+}
+
+.badge-warn {
+  background: rgba(204, 160, 121, 0.22);
+  color: #8a5a2b;
+}
+
+.badge-refunded {
+  background: rgba(70, 110, 160, 0.16);
+  color: #2f4f7a;
+}
+
+@media (max-width: 700px) {
+  .toolbar-relaxed {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-relaxed .field,
+  .toolbar-relaxed .field-user {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .toolbar-relaxed .btn {
+    width: 100%;
+  }
+}
+</style>

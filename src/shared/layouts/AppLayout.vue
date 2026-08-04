@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/stores/auth'
 import { MENU_SECTIONS, SCREENS } from '@/shared/config/menuSections'
@@ -25,11 +25,17 @@ const menuByScreen: Record<string, Omit<MenuItem, 'pantalla'>> = {
     hint: 'Asignaciones NetPay',
     permission: 'terminals.view',
   },
+  refunds: {
+    to: '/refunds',
+    label: 'Devoluciones',
+    hint: 'Cancelar cobros aplicados',
+    permission: 'refunds.view',
+  },
   movements: {
     to: '/movements',
     label: 'Movimientos',
     hint: 'Ingresos y cobros',
-    permission: 'movements.own',
+    permission: 'movements.global',
   },
   users: {
     to: '/users',
@@ -69,6 +75,30 @@ watch(
 
 watch(collapsed, (value) => {
   localStorage.setItem('netpay.sidebarCollapsed', value ? '1' : '0')
+})
+
+async function syncPermissions() {
+  if (!auth.isAuthenticated) return
+  try {
+    await auth.fetchMe({ force: true })
+  } catch {
+    // Mantener sesión cacheada si falla la red
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    void syncPermissions()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  void syncPermissions()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 function logout() {

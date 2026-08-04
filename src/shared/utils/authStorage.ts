@@ -77,14 +77,26 @@ export function clearAuthPersist() {
   sessionStorage.removeItem('authUser')
 }
 
-type TokenListener = (accessToken: string, refreshToken: string) => void
+type TokenListener = (
+  accessToken: string,
+  refreshToken: string,
+  user?: AuthUser | null,
+) => void
 let tokenListener: TokenListener | null = null
 
 export function onAuthTokensUpdated(listener: TokenListener) {
   tokenListener = listener
 }
 
-export function notifyAuthTokensUpdated(accessToken: string, refreshToken: string) {
-  writeAuthPersist({ accessToken, refreshToken })
-  tokenListener?.(accessToken, refreshToken)
+export function notifyAuthTokensUpdated(
+  accessToken: string,
+  refreshToken: string,
+  user?: AuthUser | null,
+) {
+  writeAuthPersist({
+    accessToken,
+    refreshToken,
+    ...(user !== undefined ? { user } : {}),
+  })
+  tokenListener?.(accessToken, refreshToken, user)
 }

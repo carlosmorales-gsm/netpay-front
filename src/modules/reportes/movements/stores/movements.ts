@@ -4,13 +4,21 @@ import { useEmpresasStore } from '@/shared/stores/empresas'
 import { useUiStore } from '@/shared/stores/ui'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
 import { movementsApi } from '../api/movements.api'
-import type { MovementFilters, MovementScope, MovementsResponse } from '../types'
+import type { MovementFilters, MovementUserOption, MovementsResponse } from '../types'
+
+const emptyData = (): MovementsResponse => ({
+  items: [],
+  total: 0,
+  totalImporte: 0,
+  totalImporteAplicado: 0,
+  totalAplicados: 0,
+})
 
 export const useMovementsStore = defineStore('movements', () => {
-  const scope = ref<MovementScope>('own')
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const data = ref<MovementsResponse>({ items: [], total: 0, totalImporte: 0 })
+  const data = ref<MovementsResponse>(emptyData())
+  const userOptions = ref<MovementUserOption[]>([])
 
   const filters = reactive<MovementFilters>({
     usuarioId: '',
@@ -19,19 +27,28 @@ export const useMovementsStore = defineStore('movements', () => {
     to: '',
   })
 
+  function listParams() {
+    const params: Record<string, string> = { scope: 'global' }
+    if (filters.usuarioId) params.usuarioId = filters.usuarioId
+    if (filters.companyId) params.companyId = filters.companyId
+    if (filters.from) params.from = filters.from
+    if (filters.to) params.to = filters.to
+    return params
+  }
+
+  async function fetchUsers() {
+    const res = await movementsApi.users()
+    userOptions.value = res.data
+  }
+
   async function fetchList() {
     const ui = useUiStore()
     loading.value = true
     error.value = null
     try {
       await ui.withLoading(async () => {
-        const params: Record<string, string> = { scope: scope.value }
-        if (scope.value === 'global' && filters.usuarioId) params.usuarioId = filters.usuarioId
-        if (filters.companyId) params.companyId = filters.companyId
-        if (filters.from) params.from = filters.from
-        if (filters.to) params.to = filters.to
-        const res = await movementsApi.list(params)
-        data.value = res.data
+        const res = await movementsApi.list(listParams())
+        data.value = { ...emptyData(), ...res.data }
       })
     } catch {
       error.value = 'No se pudieron cargar los movimientos'
@@ -45,12 +62,12 @@ export const useMovementsStore = defineStore('movements', () => {
     const empresas = useEmpresasStore()
     const ui = useUiStore()
     loading.value = true
+    error.value = null
     try {
       await ui.withLoading(async () => {
-        await empresas.fetchAll()
-        const params: Record<string, string> = { scope: scope.value }
-        const res = await movementsApi.list(params)
-        data.value = res.data
+        await Promise.all([empresas.fetchAll(), fetchUsers()])
+        const res = await movementsApi.list(listParams())
+        data.value = { ...emptyData(), ...res.data }
       })
     } catch {
       error.value = 'No se pudieron cargar los movimientos'
@@ -60,11 +77,6 @@ export const useMovementsStore = defineStore('movements', () => {
     }
   }
 
-  function setScope(next: MovementScope) {
-    scope.value = next
-    return fetchList()
-  }
-
   function money(value: number) {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value || 0)
   }
@@ -72,10 +84,14 @@ export const useMovementsStore = defineStore('movements', () => {
   function exportPdf() {
     if (!data.value.items.length) return
     const empresas = useEmpresasStore()
+    const userLabel = filters.usuarioId
+      ? userOptions.value.find((u) => String(u.usuarioId) === filters.usuarioId)?.nombreUsuario ||
+        filters.usuarioId
+      : 'Todos'
     downloadTablePdf({
       title: 'Movimientos NetPay',
-      filename: `movimientos-${scope.value}-${new Date().toISOString().slice(0, 10)}.pdf`,
-      subtitle: `Alcance: ${scope.value === 'own' ? 'Mis movimientos' : 'Globales'} · Total: ${money(data.value.totalImporte)}`,
+      filename: `movimientos-${new Date().toISOString().slice(0, 10)}.pdf`,
+      subtitle: `Usuario: ${userLabel} · Aplicado: ${money(data.value.totalImporteAplicado)} · Registros: ${data.value.total}`,
       columns: [
         { header: 'Fecha', key: 'fecha' },
         { header: 'Tipo', key: 'tipo' },
@@ -84,8 +100,7 @@ export const useMovementsStore = defineStore('movements', () => {
         { header: 'Usuario', key: 'usuario' },
         { header: 'Empresa', key: 'empresa' },
         { header: 'Importe', key: 'importe' },
-        { header: 'Resp.', key: 'respuesta' },
-        { header: 'Aplicado', key: 'aplicado' },
+        { header: 'Estatus', key: 'estatus' },
       ],
       rows: data.value.items.map((row) => ({
         fecha: new Date(row.fechaTransacciones).toLocaleString('es-MX'),
@@ -95,21 +110,19 @@ export const useMovementsStore = defineStore('movements', () => {
         usuario: row.usuarioNombre || `ID ${row.usuarioId}`,
         empresa: empresas.nombre(row.companyId),
         importe: money(row.importe),
-        respuesta: row.tipoRespuesta || '—',
-        aplicado: row.aplicado ? 'Sí' : 'No',
+        estatus: row.estatus?.label || (row.aplicado ? 'Aplicado' : row.tipoRespuesta || '—'),
       })),
     })
   }
 
   return {
-    scope,
     loading,
     error,
     data,
     filters,
+    userOptions,
     init,
     fetchList,
-    setScope,
     money,
     exportPdf,
   }
