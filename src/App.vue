@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import AppLayout from '@/layouts/AppLayout.vue'
+import AppLayout from '@/shared/layouts/AppLayout.vue'
+import AppToasts from '@/shared/components/AppToasts.vue'
+import AppConfirmDialog from '@/shared/components/AppConfirmDialog.vue'
+import AppLoadingOverlay from '@/shared/components/AppLoadingOverlay.vue'
 
 const route = useRoute()
 </script>
@@ -12,4 +15,8 @@ const route = useRoute()
     </AppLayout>
     <component :is="Component" v-else-if="Component" />
   </RouterView>
+
+  <AppToasts />
+  <AppConfirmDialog />
+  <AppLoadingOverlay />
 </template>

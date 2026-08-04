@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/modules/auth/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,7 +7,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/views/LoginView.vue'),
+      component: () => import('@/modules/auth/views/LoginView.vue'),
       meta: { public: true },
     },
     {
@@ -17,25 +17,25 @@ const router = createRouter({
     {
       path: '/terminals',
       name: 'terminals',
-      component: () => import('@/views/TerminalsView.vue'),
+      component: () => import('@/modules/operacion/terminals/views/TerminalsView.vue'),
       meta: { permission: 'terminals.view' },
     },
     {
       path: '/movements',
       name: 'movements',
-      component: () => import('@/views/MovementsView.vue'),
+      component: () => import('@/modules/reportes/movements/views/MovementsView.vue'),
       meta: { permission: 'movements.own' },
     },
     {
       path: '/users',
       name: 'users',
-      component: () => import('@/views/UsersView.vue'),
+      component: () => import('@/modules/admin/users/views/UsersView.vue'),
       meta: { permission: 'users.view' },
     },
     {
       path: '/roles',
       name: 'roles',
-      component: () => import('@/views/RolesView.vue'),
+      component: () => import('@/modules/admin/roles/views/RolesView.vue'),
       meta: { permission: 'roles.view' },
     },
     {
