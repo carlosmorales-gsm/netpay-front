@@ -1,4 +1,9 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import {
+  clearAuthPersist,
+  notifyAuthTokensUpdated,
+  readAuthPersist,
+} from '@/shared/utils/authStorage'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3017'
 
@@ -10,11 +15,11 @@ export const http = axios.create({
 let refreshing: Promise<string | null> | null = null
 
 function getAccessToken() {
-  return sessionStorage.getItem('accessToken')
+  return readAuthPersist().accessToken
 }
 
 function getRefreshToken() {
-  return sessionStorage.getItem('refreshToken')
+  return readAuthPersist().refreshToken
 }
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -47,13 +52,10 @@ http.interceptors.response.use(
         if (!refreshToken) return null
         try {
           const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
-          sessionStorage.setItem('accessToken', data.accessToken)
-          sessionStorage.setItem('refreshToken', data.refreshToken)
+          notifyAuthTokensUpdated(data.accessToken, data.refreshToken)
           return data.accessToken as string
         } catch {
-          sessionStorage.removeItem('accessToken')
-          sessionStorage.removeItem('refreshToken')
-          sessionStorage.removeItem('authUser')
+          clearAuthPersist()
           return null
         } finally {
           refreshing = null

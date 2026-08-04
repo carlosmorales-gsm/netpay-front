@@ -31,7 +31,7 @@ Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `m
 1. **Pantalla nueva** → carpeta completa bajo `modules/{seccion}/{pantalla}/`. Registrar ruta en `src/router/index.ts` y entrada en `shared/config/menuSections.ts` (+ permiso backend si aplica).
 2. **HTTP solo en `api/`**. El store llama al api. Los `.vue` no usan `http` directo.
 3. **Transversal** → `shared/` (nunca duplicar http/client, empresas, PDF, errores).
-4. **Auth** → `modules/auth/` (`stores/auth`, `api/auth.api`, `types`).
+4. **Auth** → `modules/auth/` (`stores/auth`, `api/auth.api`, `types`). Sesión con `pinia-plugin-persistedstate` en `localStorage` (`netpay.auth`).
 5. **UI**: listado y modal son componentes separados; la view solo orquesta.
 6. **Permisos**: menú y acciones con `auth.hasPermission('codigo')`. Códigos tipo `terminals.view`, `terminals.manage`.
 7. **Branding**: variables CSS existentes (`--primary`, `--secondary`, `--accent`, `--cream`). No inventar tema purple/IA genérico.

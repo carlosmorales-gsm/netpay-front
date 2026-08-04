@@ -71,7 +71,7 @@ const { scope, loading, error, data, filters } = storeToRefs(store)
             <td>{{ row.tipoTransaccionDesc || '—' }}</td>
             <td>{{ row.folioVenta }}</td>
             <td>{{ row.orderId || '—' }}</td>
-            <td>{{ row.usuarioId }}</td>
+            <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
             <td>{{ empresas.nombre(row.companyId) }}</td>
             <td>{{ store.money(row.importe) }}</td>
             <td>{{ row.tipoRespuesta || '—' }}</td>

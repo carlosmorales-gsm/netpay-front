@@ -1,6 +1,7 @@
 export type Movement = {
   id: number
   usuarioId: number
+  usuarioNombre: string | null
   importe: number
   fechaTransacciones: string
   tipoRespuesta: string | null
