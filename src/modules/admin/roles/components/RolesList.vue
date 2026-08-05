@@ -66,7 +66,7 @@ const { roles, loading, error } = storeToRefs(store)
 <style scoped>
 .roles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1rem;
 }
 
@@ -81,6 +81,17 @@ const { roles, loading, error } = storeToRefs(store)
   justify-content: space-between;
   gap: 0.75rem;
   align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .roles-grid {
+    gap: 1.15rem;
+  }
+
+  .role-card {
+    padding: 1.25rem 1.2rem;
+  }
 }
 
 .role-head h2 {

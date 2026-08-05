@@ -66,37 +66,85 @@ const canManage = () => auth.hasPermission('refunds.manage')
             : 'La cancelación solo está permitida antes de las 20:00 hora Ciudad de México.'
         }}
       </div>
-      <table v-else class="data">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Folio</th>
-            <th>Order</th>
-            <th>Usuario</th>
-            <th>Empresa</th>
-            <th>Importe</th>
-            <th>Tarjeta</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in items" :key="row.id">
-            <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
-            <td>{{ row.folioVenta }}</td>
-            <td>{{ row.orderId || '—' }}</td>
-            <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
-            <td>{{ empresas.nombre(row.companyId) }}</td>
-            <td>{{ store.money(row.importe) }}</td>
-            <td>{{ row.tarjeta || '—' }}</td>
-            <td class="actions">
-              <button v-if="canManage()" class="btn btn-ghost btn-danger-text" type="button"
-                :disabled="voidingId === row.id || !row.orderId" @click="store.voidPayment(row)">
+      <template v-else>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Folio</th>
+              <th>Order</th>
+              <th>Usuario</th>
+              <th>Empresa</th>
+              <th>Importe</th>
+              <th>Tarjeta</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in items" :key="row.id">
+              <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
+              <td>{{ row.folioVenta }}</td>
+              <td>{{ row.orderId || '—' }}</td>
+              <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
+              <td>{{ empresas.nombre(row.companyId) }}</td>
+              <td>{{ store.money(row.importe) }}</td>
+              <td>{{ row.tarjeta || '—' }}</td>
+              <td class="actions">
+                <button
+                  v-if="canManage()"
+                  class="btn btn-ghost btn-danger-text"
+                  type="button"
+                  :disabled="voidingId === row.id || !row.orderId"
+                  @click="store.voidPayment(row)"
+                >
+                  {{ voidingId === row.id ? 'Esperando terminal…' : 'Devolver' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="data-cards">
+          <article v-for="row in items" :key="`card-${row.id}`" class="data-card">
+            <div class="data-card-head">
+              <strong>{{ store.money(row.importe) }}</strong>
+              <span class="badge badge-ok">{{ row.folioVenta }}</span>
+            </div>
+            <div class="data-card-meta">
+              <div class="row">
+                <span>Fecha</span>
+                <b>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</b>
+              </div>
+              <div class="row">
+                <span>Order</span>
+                <b>{{ row.orderId || '—' }}</b>
+              </div>
+              <div class="row">
+                <span>Usuario</span>
+                <b>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</b>
+              </div>
+              <div class="row">
+                <span>Empresa</span>
+                <b>{{ empresas.nombre(row.companyId) }}</b>
+              </div>
+              <div class="row">
+                <span>Tarjeta</span>
+                <b>{{ row.tarjeta || '—' }}</b>
+              </div>
+            </div>
+            <div v-if="canManage()" class="actions">
+              <button
+                class="btn btn-ghost btn-danger-text"
+                type="button"
+                :disabled="voidingId === row.id || !row.orderId"
+                @click="store.voidPayment(row)"
+              >
                 {{ voidingId === row.id ? 'Esperando terminal…' : 'Devolver' }}
               </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </article>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -166,19 +214,29 @@ const canManage = () => auth.hasPermission('refunds.manage')
   background: rgba(203, 42, 29, 0.08);
 }
 
-@media (max-width: 700px) {
+@media (max-width: 860px) {
   .toolbar-relaxed {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.1rem;
+    padding: 1.25rem 1.2rem;
   }
 
   .toolbar-relaxed .field,
   .toolbar-relaxed .field-user {
     min-width: 0;
+    max-width: none;
   }
 
   .toolbar-relaxed .btn {
+    grid-column: 1 / -1;
     width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .toolbar-relaxed {
+    grid-template-columns: 1fr;
   }
 }
 </style>

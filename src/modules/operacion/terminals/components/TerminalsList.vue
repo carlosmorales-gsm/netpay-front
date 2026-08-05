@@ -90,28 +90,68 @@ const {
         <strong>Sin terminales</strong>
         Registra una asignación usuario Odoo + empresa + terminal.
       </div>
-      <table v-else class="data">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Usuario terminal</th>
-            <th>Odoo ID</th>
-            <th>Empresa</th>
-            <th>Store</th>
-            <th>Folio terminal</th>
-            <th>Estado</th>
-            <th v-if="auth.hasPermission('terminals.manage')">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in items" :key="row.id">
-            <td>{{ row.id }}</td>
-            <td>{{ row.nombreUsuario }}</td>
-            <td>{{ row.usuarioId }}</td>
-            <td>{{ empresas.nombre(row.companyId) }}</td>
-            <td>{{ row.storeId }}</td>
-            <td>{{ row.folioTerminal }}</td>
-            <td>
+      <template v-else>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuario terminal</th>
+              <th>Odoo ID</th>
+              <th>Empresa</th>
+              <th>Store</th>
+              <th>Folio terminal</th>
+              <th>Estado</th>
+              <th v-if="auth.hasPermission('terminals.manage')">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in items" :key="row.id">
+              <td>{{ row.id }}</td>
+              <td>{{ row.nombreUsuario }}</td>
+              <td>{{ row.usuarioId }}</td>
+              <td>{{ empresas.nombre(row.companyId) }}</td>
+              <td>{{ row.storeId }}</td>
+              <td>{{ row.folioTerminal }}</td>
+              <td>
+                <label
+                  v-if="auth.hasPermission('terminals.manage')"
+                  class="switch"
+                  :title="row.activo ? 'Activa' : 'Inactiva'"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="row.activo"
+                    :disabled="togglingId === row.id"
+                    @change="store.toggleActivo(row)"
+                  />
+                  <span class="slider" />
+                </label>
+                <span v-else class="badge" :class="row.activo ? 'badge-ok' : 'badge-off'">
+                  {{ row.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td v-if="auth.hasPermission('terminals.manage')" class="actions">
+                <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(row)">
+                  Editar
+                </button>
+                <button
+                  class="btn btn-gold btn-sm"
+                  type="button"
+                  :disabled="!row.activo || testingId === row.id"
+                  title="Cobro de prueba $0.10 (10 centavos)"
+                  @click="store.testCharge(row)"
+                >
+                  {{ testingId === row.id ? 'Enviando…' : 'Test' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="data-cards">
+          <article v-for="row in items" :key="`card-${row.id}`" class="data-card">
+            <div class="data-card-head">
+              <strong>{{ row.nombreUsuario }}</strong>
               <label
                 v-if="auth.hasPermission('terminals.manage')"
                 class="switch"
@@ -128,8 +168,30 @@ const {
               <span v-else class="badge" :class="row.activo ? 'badge-ok' : 'badge-off'">
                 {{ row.activo ? 'Activo' : 'Inactivo' }}
               </span>
-            </td>
-            <td v-if="auth.hasPermission('terminals.manage')" class="actions">
+            </div>
+            <div class="data-card-meta">
+              <div class="row">
+                <span>ID</span>
+                <b>{{ row.id }}</b>
+              </div>
+              <div class="row">
+                <span>Odoo ID</span>
+                <b>{{ row.usuarioId }}</b>
+              </div>
+              <div class="row">
+                <span>Empresa</span>
+                <b>{{ empresas.nombre(row.companyId) }}</b>
+              </div>
+              <div class="row">
+                <span>Store</span>
+                <b>{{ row.storeId }}</b>
+              </div>
+              <div class="row">
+                <span>Folio</span>
+                <b>{{ row.folioTerminal }}</b>
+              </div>
+            </div>
+            <div v-if="auth.hasPermission('terminals.manage')" class="actions">
               <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(row)">
                 Editar
               </button>
@@ -142,10 +204,10 @@ const {
               >
                 {{ testingId === row.id ? 'Enviando…' : 'Test' }}
               </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </article>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -272,5 +334,11 @@ const {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+}
+
+@media (max-width: 860px) {
+  .autocomplete-field {
+    min-width: 0;
+  }
 }
 </style>

@@ -4,7 +4,12 @@ import { useEmpresasStore } from '@/shared/stores/empresas'
 import { useUiStore } from '@/shared/stores/ui'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
 import { movementsApi } from '../api/movements.api'
-import type { MovementFilters, MovementUserOption, MovementsResponse } from '../types'
+import type {
+  MovementFilters,
+  MovementTypeOption,
+  MovementUserOption,
+  MovementsResponse,
+} from '../types'
 
 const emptyData = (): MovementsResponse => ({
   items: [],
@@ -14,15 +19,24 @@ const emptyData = (): MovementsResponse => ({
   totalAplicados: 0,
 })
 
+/** Tipos alineados con api-netpay `tipoTranasaccion` / columna tipo_transaccion */
+export const MOVEMENT_TYPE_OPTIONS: MovementTypeOption[] = [
+  { id: 1, label: 'Generar cobro' },
+  { id: 2, label: 'Cancelar cobro' },
+  { id: 3, label: 'Reimprimir cobro' },
+]
+
 export const useMovementsStore = defineStore('movements', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const data = ref<MovementsResponse>(emptyData())
   const userOptions = ref<MovementUserOption[]>([])
+  const typeOptions = ref<MovementTypeOption[]>(MOVEMENT_TYPE_OPTIONS)
 
   const filters = reactive<MovementFilters>({
     usuarioId: '',
     companyId: '',
+    tipoTransaccion: '',
     from: '',
     to: '',
   })
@@ -31,6 +45,7 @@ export const useMovementsStore = defineStore('movements', () => {
     const params: Record<string, string> = { scope: 'global' }
     if (filters.usuarioId) params.usuarioId = filters.usuarioId
     if (filters.companyId) params.companyId = filters.companyId
+    if (filters.tipoTransaccion) params.tipoTransaccion = filters.tipoTransaccion
     if (filters.from) params.from = filters.from
     if (filters.to) params.to = filters.to
     return params
@@ -121,6 +136,7 @@ export const useMovementsStore = defineStore('movements', () => {
     data,
     filters,
     userOptions,
+    typeOptions,
     init,
     fetchList,
     money,

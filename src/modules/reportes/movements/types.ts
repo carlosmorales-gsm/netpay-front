@@ -31,8 +31,14 @@ export type MovementsResponse = {
 export type MovementFilters = {
   usuarioId: string
   companyId: string
+  tipoTransaccion: string
   from: string
   to: string
+}
+
+export type MovementTypeOption = {
+  id: number
+  label: string
 }
 
 export type MovementUserOption = {

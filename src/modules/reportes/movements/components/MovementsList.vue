@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useEmpresasStore } from '@/shared/stores/empresas'
-import { useMovementsStore } from '../stores/movements'
+import { MOVEMENT_TYPE_OPTIONS, useMovementsStore } from '../stores/movements'
 
 const store = useMovementsStore()
 const empresas = useEmpresasStore()
 const { loading, error, data, filters, userOptions } = storeToRefs(store)
+const typeOptions = MOVEMENT_TYPE_OPTIONS
 
 function estatusClass(key?: string) {
   if (key === 'applied') return 'badge-ok'
@@ -43,6 +44,15 @@ function estatusClass(key?: string) {
         </select>
       </div>
       <div class="field">
+        <label>Tipo</label>
+        <select v-model="filters.tipoTransaccion">
+          <option value="">Todos</option>
+          <option v-for="t in typeOptions" :key="t.id" :value="String(t.id)">
+            {{ t.label }}
+          </option>
+        </select>
+      </div>
+      <div class="field">
         <label>Desde</label>
         <input v-model="filters.from" type="date" />
       </div>
@@ -66,39 +76,81 @@ function estatusClass(key?: string) {
         <strong>Sin movimientos</strong>
         No hay transacciones para los filtros seleccionados.
       </div>
-      <table v-else class="data">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Tipo</th>
-            <th>Folio</th>
-            <th>Order</th>
-            <th>Usuario</th>
-            <th>Empresa</th>
-            <th>Importe</th>
-            <th>Estatus</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in data.items" :key="row.id">
-            <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
-            <td>{{ row.tipoTransaccionDesc || '—' }}</td>
-            <td>{{ row.folioVenta }}</td>
-            <td>{{ row.orderId || '—' }}</td>
-            <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
-            <td>{{ empresas.nombre(row.companyId) }}</td>
-            <td>{{ store.money(row.importe) }}</td>
-            <td>
+      <template v-else>
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Folio</th>
+              <th>Order</th>
+              <th>Usuario</th>
+              <th>Empresa</th>
+              <th>Importe</th>
+              <th>Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in data.items" :key="row.id">
+              <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
+              <td>{{ row.tipoTransaccionDesc || '—' }}</td>
+              <td>{{ row.folioVenta }}</td>
+              <td>{{ row.orderId || '—' }}</td>
+              <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
+              <td>{{ empresas.nombre(row.companyId) }}</td>
+              <td>{{ store.money(row.importe) }}</td>
+              <td>
+                <span class="badge" :class="estatusClass(row.estatus?.key)">
+                  {{
+                    row.estatus?.label ||
+                    (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
+                  }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="data-cards">
+          <article v-for="row in data.items" :key="`card-${row.id}`" class="data-card">
+            <div class="data-card-head">
+              <strong>{{ store.money(row.importe) }}</strong>
               <span class="badge" :class="estatusClass(row.estatus?.key)">
                 {{
                   row.estatus?.label ||
                   (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
                 }}
               </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+            <div class="data-card-meta">
+              <div class="row">
+                <span>Fecha</span>
+                <b>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</b>
+              </div>
+              <div class="row">
+                <span>Tipo</span>
+                <b>{{ row.tipoTransaccionDesc || '—' }}</b>
+              </div>
+              <div class="row">
+                <span>Folio</span>
+                <b>{{ row.folioVenta }}</b>
+              </div>
+              <div class="row">
+                <span>Order</span>
+                <b>{{ row.orderId || '—' }}</b>
+              </div>
+              <div class="row">
+                <span>Usuario</span>
+                <b>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</b>
+              </div>
+              <div class="row">
+                <span>Empresa</span>
+                <b>{{ empresas.nombre(row.companyId) }}</b>
+              </div>
+            </div>
+          </article>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -164,10 +216,12 @@ function estatusClass(key?: string) {
   color: #2f4f7a;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 860px) {
   .toolbar-relaxed {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.1rem;
+    padding: 1.25rem 1.2rem;
   }
 
   .toolbar-relaxed .field,
@@ -177,7 +231,14 @@ function estatusClass(key?: string) {
   }
 
   .toolbar-relaxed .btn {
+    grid-column: 1 / -1;
     width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .toolbar-relaxed {
+    grid-template-columns: 1fr;
   }
 }
 </style>

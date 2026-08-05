@@ -223,24 +223,91 @@ async function onSubmit() {
 @media (max-width: 960px) {
   .login-shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    align-content: start;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .brand-panel {
-    min-height: 220px;
-    padding: 1.5rem;
+    min-height: 0;
+    padding: 1.25rem 1.35rem 1.5rem;
+    gap: 0.85rem;
+    justify-content: flex-start;
+  }
+
+  .brand-panel small {
+    display: none;
+  }
+
+  .logo-white {
+    width: min(140px, 48%);
+  }
+
+  .dove {
+    width: 36px;
+    margin-bottom: 0.45rem;
   }
 
   .brand-copy h1 {
-    font-size: 2.25rem;
+    font-size: clamp(1.75rem, 6.5vw, 2.1rem);
+    margin-bottom: 0.25rem;
   }
 
-  .login-card {
-    border-radius: 16px 8px 8px 8px;
-    padding: 1.75rem 1.35rem;
+  .brand-copy p {
+    max-width: none;
+    font-size: 0.95rem;
   }
 
   .form-panel {
-    padding: 1.25rem;
+    display: block;
+    padding: 0 1.15rem 1.5rem;
+    margin-top: -1.25rem;
+    place-items: unset;
+  }
+
+  .login-card {
+    width: 100%;
+    border-radius: 16px 8px 8px 8px;
+    padding: 1.5rem 1.25rem 1.35rem;
+    margin: 0 auto;
+  }
+
+  .logo-blue {
+    width: 100px;
+    margin-bottom: 0.85rem;
+  }
+
+  .login-card h2 {
+    font-size: 1.55rem;
+  }
+
+  .subtitle {
+    margin-bottom: 1.15rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .brand-panel {
+    padding: 1rem 1.1rem 1.25rem;
+    gap: 0.65rem;
+  }
+
+  .form-panel {
+    padding: 0 0.9rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    margin-top: -1rem;
+  }
+
+  .login-card {
+    padding: 1.25rem 1.05rem 1.2rem;
+  }
+
+  .toggle-pass {
+    min-height: 44px;
+  }
+
+  .submit {
+    min-height: 48px;
   }
 }
 </style>

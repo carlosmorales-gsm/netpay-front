@@ -162,9 +162,14 @@ function toggleSidebar() {
       </nav>
     </aside>
 
-    <div v-if="mobileOpen" class="scrim" @click="mobileOpen = false" />
-
     <div class="workspace">
+      <div
+        v-if="mobileOpen"
+        class="scrim"
+        aria-hidden="true"
+        @click="mobileOpen = false"
+      />
+
       <header class="topbar">
         <div class="topbar-left">
           <button class="menu-btn mobile-only" type="button" aria-label="Menú" @click="toggleSidebar">
@@ -195,19 +200,16 @@ function toggleSidebar() {
 <style scoped>
 .shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
   background: var(--cream);
-  transition: grid-template-columns 0.2s ease;
-}
-
-.shell.collapsed {
-  grid-template-columns: 84px minmax(0, 1fr);
 }
 
 .sidebar {
   position: sticky;
   top: 0;
+  flex: 0 0 280px;
+  width: 280px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -217,6 +219,12 @@ function toggleSidebar() {
   color: white;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow: auto;
+  transition: flex-basis 0.2s ease, width 0.2s ease;
+}
+
+.shell.collapsed .sidebar {
+  flex-basis: 84px;
+  width: 84px;
 }
 
 .sidebar-brand {
@@ -361,10 +369,13 @@ nav {
 }
 
 .workspace {
+  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
 }
 
 .topbar {
@@ -464,8 +475,9 @@ nav {
 }
 
 @media (max-width: 1100px) {
-  .shell:not(.collapsed) {
-    grid-template-columns: 240px minmax(0, 1fr);
+  .sidebar {
+    flex-basis: 220px;
+    width: 220px;
   }
 
   .content {
@@ -477,12 +489,8 @@ nav {
   }
 }
 
+/* Tablet y celular: menú drawer; el contenido usa todo el ancho */
 @media (max-width: 900px) {
-  .shell,
-  .shell.collapsed {
-    grid-template-columns: 1fr;
-  }
-
   .mobile-only {
     display: grid;
     place-items: center;
@@ -497,16 +505,20 @@ nav {
   }
 
   .sidebar,
-  .sidebar.collapsed {
+  .shell.collapsed .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(300px, 86vw);
+    flex: none;
+    width: min(300px, 88vw);
+    height: 100vh;
     z-index: 40;
     transform: translateX(-105%);
     transition: transform 0.25s ease;
     padding: 1.25rem 0.9rem;
+    padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.open {
@@ -521,12 +533,47 @@ nav {
     z-index: 35;
   }
 
+  .workspace {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .content {
-    padding: 1rem;
+    padding: 1.35rem 1.25rem 1.75rem;
+    padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content-inner {
+    width: 100%;
+    max-width: 100%;
   }
 
   .topbar {
-    min-height: 64px;
+    min-height: 68px;
+    padding: 0.85rem 1.15rem;
+    padding-top: calc(0.85rem + env(safe-area-inset-top, 0px));
+  }
+
+  .nav-item {
+    min-height: 48px;
+  }
+
+  .menu-btn,
+  .logout-btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 1.2rem 1.1rem 1.6rem;
+    padding-bottom: calc(1.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .topbar {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
   }
 }
 </style>
