@@ -8,4 +8,7 @@ export const movementsApi = {
   users() {
     return http.get<MovementUserOption[]>('/admin/movements/users')
   },
+  reprint(id: number) {
+    return http.post(`/admin/movements/${id}/reprint`)
+  },
 }

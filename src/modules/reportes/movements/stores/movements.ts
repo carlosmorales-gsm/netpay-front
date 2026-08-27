@@ -2,9 +2,11 @@ import { reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useEmpresasStore } from '@/shared/stores/empresas'
 import { useUiStore } from '@/shared/stores/ui'
+import { getApiErrorMessage } from '@/shared/utils/apiError'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
 import { movementsApi } from '../api/movements.api'
 import type {
+  Movement,
   MovementFilters,
   MovementTypeOption,
   MovementUserOption,
@@ -32,6 +34,7 @@ export const useMovementsStore = defineStore('movements', () => {
   const data = ref<MovementsResponse>(emptyData())
   const userOptions = ref<MovementUserOption[]>([])
   const typeOptions = ref<MovementTypeOption[]>(MOVEMENT_TYPE_OPTIONS)
+  const reprintingId = ref<number | null>(null)
 
   const filters = reactive<MovementFilters>({
     usuarioId: '',
@@ -96,6 +99,45 @@ export const useMovementsStore = defineStore('movements', () => {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value || 0)
   }
 
+  function canReprint(row: Movement) {
+    return (
+      row.estatus?.key === 'applied' ||
+      (row.aplicado &&
+        row.tipoRespuesta === '00' &&
+        row.tipoTransaccion === 1)
+    )
+  }
+
+  async function reprintTicket(row: Movement) {
+    const ui = useUiStore()
+    if (!canReprint(row)) return
+
+    const ok = await ui.confirm({
+      title: 'Reimprimir ticket',
+      message:
+        `Se enviará la reimpresión a la terminal NetPay.\n` +
+        `Folio: ${row.folioVenta}\n` +
+        `Order: ${row.orderId || '—'}\n` +
+        `Importe: ${money(row.importe)}\n\n` +
+        'La terminal debe estar encendida y en pantalla principal. ¿Continuar?',
+      confirmText: 'Reimprimir',
+      cancelText: 'Cancelar',
+    })
+    if (!ok) return
+
+    reprintingId.value = row.id
+    try {
+      await ui.withLoading(async () => {
+        await movementsApi.reprint(row.id)
+        ui.success('Reimpresión enviada a la terminal')
+      })
+    } catch (err) {
+      ui.error(getApiErrorMessage(err, 'No se pudo reimprimir el ticket'))
+    } finally {
+      reprintingId.value = null
+    }
+  }
+
   function exportPdf() {
     if (!data.value.items.length) return
     const empresas = useEmpresasStore()
@@ -137,9 +179,12 @@ export const useMovementsStore = defineStore('movements', () => {
     filters,
     userOptions,
     typeOptions,
+    reprintingId,
     init,
     fetchList,
     money,
+    canReprint,
+    reprintTicket,
     exportPdf,
   }
 })

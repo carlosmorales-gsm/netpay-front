@@ -7,8 +7,9 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const email = ref('')
-const password = ref('')
+const isDev = import.meta.env.DEV
+const email = ref(isDev ? 'admin@sanmartin.com.mx' : '')
+const password = ref(isDev ? 'AdminSM2026!' : '')
 const localError = ref<string | null>(null)
 const showPassword = ref(false)
 

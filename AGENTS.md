@@ -54,7 +54,8 @@ Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `r
 | Cliente axios / refresh | `shared/api/http.ts` |
 | Toasts / confirm / loading | `shared/stores/ui.ts` + `shared/components/App*` — **no usar** `alert()` ni `confirm()` nativos |
 | Buscar usuario Odoo | Front → `/admin/terminals/odoo-users/:ref` o `/admin/users/odoo/:ref` → api-netpay → api-odoo-gsm `GET /users/:ref` |
-| Devoluciones / cancel NetPay | `modules/operacion/refunds/` → `GET /admin/refunds`, `POST /admin/refunds/:id/void` (Smart Accounts `isSmartAccounts`) |
+| Devoluciones / cancel NetPay | `modules/operacion/refunds/` → `GET /admin/refunds`, `POST /admin/refunds/:id/void` (Smart Accounts `isSmartAccounts`). Tras void exitoso desde el front, también llama `POST /admin/movements/:id/reprint`. |
+| Reimprimir ticket | Movimientos (aplicados) → `POST /admin/movements/:id/reprint` → NetPay reprint Smart Accounts (`folioId`). También se dispara automáticamente después de una devolución desde el front. |
 
 Backend relacionado: `api-netpay` usa `API_ODOO` (debe apuntar a api-odoo-gsm, ej. `http://localhost:3006/`).
 

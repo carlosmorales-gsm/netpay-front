@@ -5,7 +5,7 @@ import { MOVEMENT_TYPE_OPTIONS, useMovementsStore } from '../stores/movements'
 
 const store = useMovementsStore()
 const empresas = useEmpresasStore()
-const { loading, error, data, filters, userOptions } = storeToRefs(store)
+const { loading, error, data, filters, userOptions, reprintingId } = storeToRefs(store)
 const typeOptions = MOVEMENT_TYPE_OPTIONS
 
 function estatusClass(key?: string) {
@@ -88,6 +88,7 @@ function estatusClass(key?: string) {
               <th>Empresa</th>
               <th>Importe</th>
               <th>Estatus</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -106,6 +107,31 @@ function estatusClass(key?: string) {
                     (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
                   }}
                 </span>
+              </td>
+              <td class="actions">
+                <button
+                  v-if="store.canReprint(row)"
+                  class="btn-icon"
+                  type="button"
+                  title="Reimprimir ticket"
+                  :disabled="reprintingId === row.id"
+                  @click="store.reprintTicket(row)"
+                >
+                  <svg
+                    v-if="reprintingId !== row.id"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 14H8v-4h8v4zm2-4v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"
+                    />
+                    <path fill="currentColor" d="M18 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+                  </svg>
+                  <span v-else class="spinner" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -148,6 +174,22 @@ function estatusClass(key?: string) {
                 <b>{{ empresas.nombre(row.companyId) }}</b>
               </div>
             </div>
+            <div v-if="store.canReprint(row)" class="actions">
+              <button
+                class="btn btn-ghost btn-sm reprint-btn"
+                type="button"
+                :disabled="reprintingId === row.id"
+                @click="store.reprintTicket(row)"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 14H8v-4h8v4zm2-4v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"
+                  />
+                </svg>
+                {{ reprintingId === row.id ? 'Enviando…' : 'Reimprimir ticket' }}
+              </button>
+            </div>
           </article>
         </div>
       </template>
@@ -160,6 +202,36 @@ function estatusClass(key?: string) {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--secondary);
+  background: rgba(204, 160, 121, 0.12);
+}
+
+.btn-icon:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.reprint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .toolbar-relaxed {

@@ -93,6 +93,7 @@ export const useRefundsStore = defineStore('refunds', () => {
         `Se enviará la cancelación a la terminal NetPay (Smart Accounts) por ${money(row.importe)}.\n` +
         `Order: ${row.orderId || '—'}\n` +
         `Folio: ${row.folioVenta}\n\n` +
+        'Al completar la devolución también se enviará la reimpresión del ticket a la terminal.\n' +
         'La cancelación debe ser el mismo día (antes de las 8:00 p.m. CDMX). ¿Continuar?',
       confirmText: 'Devolver (esperando terminal)',
       cancelText: 'Cancelar',
@@ -107,7 +108,24 @@ export const useRefundsStore = defineStore('refunds', () => {
         if (!res.data.success) {
           throw new Error(res.data.message || 'La devolución no procedió')
         }
-        ui.success(res.data.message || 'Devolución exitosa en terminal')
+
+        // Tras devolución desde el front: también reimprimir ticket en terminal.
+        try {
+          await movementsApi.reprint(row.id)
+          ui.success(
+            (res.data.message || 'Devolución exitosa en terminal') +
+              '. Reimpresión enviada a la terminal.',
+          )
+        } catch (reprintErr) {
+          ui.success(res.data.message || 'Devolución exitosa en terminal')
+          ui.error(
+            getApiErrorMessage(
+              reprintErr,
+              'La devolución se completó, pero no se pudo reimprimir el ticket',
+            ),
+          )
+        }
+
         await fetchList()
       })
     } catch (err) {
