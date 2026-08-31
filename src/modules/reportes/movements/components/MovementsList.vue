@@ -1,12 +1,19 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useEmpresasStore } from '@/shared/stores/empresas'
+import { formatLocalDateParts } from '@/shared/utils/formatDate'
 import { MOVEMENT_TYPE_OPTIONS, useMovementsStore } from '../stores/movements'
 
 const store = useMovementsStore()
 const empresas = useEmpresasStore()
-const { loading, error, data, filters, userOptions, reprintingId } = storeToRefs(store)
+const { loading, error, data, filters, userOptions } = storeToRefs(store)
 const typeOptions = MOVEMENT_TYPE_OPTIONS
+const expandedId = ref<number | null>(null)
+
+function toggleDetail(id: number) {
+  expandedId.value = expandedId.value === id ? null : id
+}
 
 function estatusClass(key?: string) {
   if (key === 'applied') return 'badge-ok'
@@ -15,6 +22,24 @@ function estatusClass(key?: string) {
   if (key === 'cancelled') return 'badge-off'
   if (key === 'declined') return 'badge-off'
   return 'badge-off'
+}
+
+function typeClass(tipo?: number | null) {
+  if (tipo === 2) return 'type-void'
+  if (tipo === 3) return 'type-reprint'
+  return 'type-sale'
+}
+
+function typeLabel(row: { tipoTransaccion?: number | null; tipoTransaccionDesc?: string | null }) {
+  if (row.tipoTransaccion === 1) return 'Cobro'
+  if (row.tipoTransaccion === 2) return 'Cancelación'
+  if (row.tipoTransaccion === 3) return 'Reimpresión'
+  return row.tipoTransaccionDesc || '—'
+}
+
+function shortCompany(name: string) {
+  if (name.length <= 28) return name
+  return `${name.slice(0, 26)}…`
 }
 </script>
 
@@ -52,17 +77,29 @@ function estatusClass(key?: string) {
           </option>
         </select>
       </div>
-      <div class="field">
-        <label>Desde</label>
-        <input v-model="filters.from" type="date" />
+      <div class="field-range">
+        <div class="field">
+          <label>Desde</label>
+          <input v-model="filters.from" type="date" />
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input v-model="filters.to" type="date" />
+        </div>
       </div>
-      <div class="field">
-        <label>Hasta</label>
-        <input v-model="filters.to" type="date" />
+      <div class="toolbar-actions">
+        <button class="btn btn-primary" type="button" @click="store.fetchList()">
+          Filtrar
+        </button>
+        <button
+          v-if="store.hasActiveFilters()"
+          class="btn btn-ghost"
+          type="button"
+          @click="store.clearFilters()"
+        >
+          Limpiar
+        </button>
       </div>
-      <button class="btn btn-primary" type="button" @click="store.fetchList()">
-        Filtrar
-      </button>
     </div>
 
     <p v-if="error" class="error-text" role="alert">{{ error }}</p>
@@ -77,29 +114,62 @@ function estatusClass(key?: string) {
         No hay transacciones para los filtros seleccionados.
       </div>
       <template v-else>
-        <table class="data">
+        <table class="data movements-table">
           <thead>
             <tr>
+              <th class="col-toggle"></th>
               <th>Fecha</th>
               <th>Tipo</th>
               <th>Folio</th>
               <th>Order</th>
               <th>Usuario</th>
+              <th>Terminal</th>
               <th>Empresa</th>
-              <th>Importe</th>
+              <th class="col-amount">Importe</th>
               <th>Estatus</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in data.items" :key="row.id">
-              <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
-              <td>{{ row.tipoTransaccionDesc || '—' }}</td>
-              <td>{{ row.folioVenta }}</td>
-              <td>{{ row.orderId || '—' }}</td>
+            <template v-for="row in data.items" :key="row.id">
+            <tr
+              class="row-main"
+              :class="{ 'is-open': expandedId === row.id }"
+              @click="toggleDetail(row.id)"
+            >
+              <td class="col-toggle">
+                <button
+                  class="btn-toggle"
+                  type="button"
+                  :aria-expanded="expandedId === row.id"
+                  :title="expandedId === row.id ? 'Ocultar detalle' : 'Ver respuesta'"
+                  @click.stop="toggleDetail(row.id)"
+                >
+                  {{ expandedId === row.id ? '▾' : '▸' }}
+                </button>
+              </td>
+              <td>
+                <div class="when">
+                  <span class="when-date">{{ formatLocalDateParts(row.fechaTransacciones).date }}</span>
+                  <span class="when-time">{{ formatLocalDateParts(row.fechaTransacciones).time }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="type-chip" :class="typeClass(row.tipoTransaccion)">
+                  {{ typeLabel(row) }}
+                </span>
+              </td>
+              <td class="mono">{{ row.folioVenta }}</td>
+              <td>
+                <span class="order" :title="row.orderId || ''">{{ row.orderId || '—' }}</span>
+              </td>
               <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
-              <td>{{ empresas.nombre(row.companyId) }}</td>
-              <td>{{ store.money(row.importe) }}</td>
+              <td class="mono">{{ row.folioTerminal || row.storeId || '—' }}</td>
+              <td>
+                <span :title="empresas.nombre(row.companyId)">
+                  {{ shortCompany(empresas.nombre(row.companyId)) }}
+                </span>
+              </td>
+              <td class="col-amount">{{ store.money(row.importe) }}</td>
               <td>
                 <span class="badge" :class="estatusClass(row.estatus?.key)">
                   {{
@@ -108,32 +178,21 @@ function estatusClass(key?: string) {
                   }}
                 </span>
               </td>
-              <td class="actions">
-                <button
-                  v-if="store.canReprint(row)"
-                  class="btn-icon"
-                  type="button"
-                  title="Reimprimir ticket"
-                  :disabled="reprintingId === row.id"
-                  @click="store.reprintTicket(row)"
-                >
-                  <svg
-                    v-if="reprintingId !== row.id"
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 14H8v-4h8v4zm2-4v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"
-                    />
-                    <path fill="currentColor" d="M18 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
-                  </svg>
-                  <span v-else class="spinner" />
-                </button>
+            </tr>
+            <tr v-if="expandedId === row.id" class="row-detail">
+              <td colspan="10">
+                <div class="detail">
+                  <p class="detail-summary">{{ row.detalle?.resumen || 'Sin detalle de respuesta' }}</p>
+                  <dl class="detail-grid">
+                    <div v-for="campo in row.detalle?.campos || []" :key="campo.label" class="detail-item">
+                      <dt>{{ campo.label }}</dt>
+                      <dd>{{ campo.value }}</dd>
+                    </div>
+                  </dl>
+                </div>
               </td>
             </tr>
+            </template>
           </tbody>
         </table>
 
@@ -151,11 +210,14 @@ function estatusClass(key?: string) {
             <div class="data-card-meta">
               <div class="row">
                 <span>Fecha</span>
-                <b>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</b>
+                <b>
+                  {{ formatLocalDateParts(row.fechaTransacciones).date }}
+                  {{ formatLocalDateParts(row.fechaTransacciones).time }}
+                </b>
               </div>
               <div class="row">
                 <span>Tipo</span>
-                <b>{{ row.tipoTransaccionDesc || '—' }}</b>
+                <b>{{ typeLabel(row) }}</b>
               </div>
               <div class="row">
                 <span>Folio</span>
@@ -163,32 +225,36 @@ function estatusClass(key?: string) {
               </div>
               <div class="row">
                 <span>Order</span>
-                <b>{{ row.orderId || '—' }}</b>
+                <b class="order">{{ row.orderId || '—' }}</b>
               </div>
               <div class="row">
                 <span>Usuario</span>
                 <b>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</b>
               </div>
               <div class="row">
+                <span>Terminal</span>
+                <b>{{ row.folioTerminal || row.storeId || '—' }}</b>
+              </div>
+              <div class="row">
                 <span>Empresa</span>
                 <b>{{ empresas.nombre(row.companyId) }}</b>
               </div>
             </div>
-            <div v-if="store.canReprint(row)" class="actions">
-              <button
-                class="btn btn-ghost btn-sm reprint-btn"
-                type="button"
-                :disabled="reprintingId === row.id"
-                @click="store.reprintTicket(row)"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 14H8v-4h8v4zm2-4v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"
-                  />
-                </svg>
-                {{ reprintingId === row.id ? 'Enviando…' : 'Reimprimir ticket' }}
-              </button>
+            <button
+              class="btn btn-ghost btn-sm detail-toggle"
+              type="button"
+              @click="toggleDetail(row.id)"
+            >
+              {{ expandedId === row.id ? 'Ocultar respuesta' : 'Ver respuesta' }}
+            </button>
+            <div v-if="expandedId === row.id" class="detail">
+              <p class="detail-summary">{{ row.detalle?.resumen || 'Sin detalle de respuesta' }}</p>
+              <dl class="detail-grid">
+                <div v-for="campo in row.detalle?.campos || []" :key="campo.label" class="detail-item">
+                  <dt>{{ campo.label }}</dt>
+                  <dd>{{ campo.value }}</dd>
+                </div>
+              </dl>
             </div>
           </article>
         </div>
@@ -204,53 +270,42 @@ function estatusClass(key?: string) {
   gap: 1.25rem;
 }
 
-.btn-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--white);
-  color: var(--primary);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.btn-icon:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--secondary);
-  background: rgba(204, 160, 121, 0.12);
-}
-
-.btn-icon:disabled {
-  opacity: 0.55;
-  cursor: wait;
-}
-
-.reprint-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
 .toolbar-relaxed {
-  gap: 1rem 1.25rem;
-  padding: 1.25rem 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.1rem;
+  padding: 1.15rem 1.3rem;
   margin-bottom: 0;
   align-items: flex-end;
 }
 
 .toolbar-relaxed .field {
-  flex: 1 1 180px;
-  min-width: 160px;
+  flex: 1 1 160px;
+  min-width: 150px;
   max-width: none;
   margin-bottom: 0;
 }
 
 .toolbar-relaxed .field-user {
-  flex: 1.4 1 240px;
-  min-width: 220px;
+  flex: 1.3 1 220px;
+}
+
+.field-range {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1.2 1 260px;
+  min-width: 240px;
+}
+
+.field-range .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
 }
 
 .toolbar-relaxed .field label {
@@ -269,13 +324,148 @@ function estatusClass(key?: string) {
 
 .toolbar-relaxed .btn {
   min-height: 42px;
-  padding: 0.55rem 1.25rem;
+  padding: 0.55rem 1.15rem;
   font-size: 0.95rem;
-  align-self: flex-end;
 }
 
 .table-wrap {
-  padding: 0.35rem 0.5rem 0.75rem;
+  padding: 0.2rem 0.35rem 0.6rem;
+}
+
+.movements-table {
+  min-width: 1120px;
+}
+
+.col-toggle {
+  width: 42px;
+  padding-right: 0.25rem;
+}
+
+.btn-toggle {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.row-main {
+  cursor: pointer;
+}
+
+.row-main.is-open {
+  background: rgba(53, 100, 125, 0.04);
+}
+
+.row-detail td {
+  background: var(--cream-alt);
+  padding: 0.85rem 1rem 1.1rem;
+  max-width: none;
+}
+
+.detail-summary {
+  margin: 0 0 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+}
+
+.detail-item dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
+.detail-item dd {
+  margin: 0;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.detail-toggle {
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.when {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  line-height: 1.25;
+}
+
+.when-date {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.when-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.type-chip {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.type-sale {
+  background: rgba(53, 100, 125, 0.1);
+  color: var(--primary);
+}
+
+.type-void {
+  background: rgba(203, 42, 29, 0.08);
+  color: #9a2218;
+}
+
+.type-reprint {
+  background: rgba(40, 75, 94, 0.08);
+  color: var(--secondary);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.order {
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.col-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .badge-warn {
@@ -297,14 +487,23 @@ function estatusClass(key?: string) {
   }
 
   .toolbar-relaxed .field,
-  .toolbar-relaxed .field-user {
+  .toolbar-relaxed .field-user,
+  .field-range {
     min-width: 0;
     max-width: none;
+    grid-column: auto;
   }
 
-  .toolbar-relaxed .btn {
+  .field-range {
     grid-column: 1 / -1;
-    width: 100%;
+  }
+
+  .toolbar-actions {
+    grid-column: 1 / -1;
+  }
+
+  .toolbar-actions .btn {
+    flex: 1;
   }
 }
 

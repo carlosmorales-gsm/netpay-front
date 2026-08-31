@@ -12,10 +12,15 @@ export type Movement = {
   tipoTransaccionDesc: string | null
   aplicado: boolean
   storeId: string | null
+  folioTerminal: string | null
   companyId: number | null
   estatus?: {
     key: string
     label: string
+  }
+  detalle?: {
+    resumen: string
+    campos: Array<{ label: string; value: string }>
   }
 }
 

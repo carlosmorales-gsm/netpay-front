@@ -16,8 +16,8 @@ onMounted(() => store.init())
       <div>
         <h1>Devoluciones</h1>
         <p>
-          Cancelación de cobros aplicados vía terminal NetPay (Smart Accounts).
-          Solo mismo día, antes de las 8:00 p.m. CDMX.
+          Solo se podrán cancelar los cobros realizados el día de hoy, hasta las 20:00 horas
+          (hora de Ciudad de México).
         </p>
       </div>
       <div class="header-actions">

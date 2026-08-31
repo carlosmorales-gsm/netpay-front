@@ -5,6 +5,7 @@ import { useUiStore } from '@/shared/stores/ui'
 import { getApiErrorMessage } from '@/shared/utils/apiError'
 import { movementsApi } from '@/modules/reportes/movements/api/movements.api'
 import type { MovementUserOption } from '@/modules/reportes/movements/types'
+import { browserTimeZone } from '@/shared/utils/formatDate'
 import { refundsApi } from '../api/refunds.api'
 import type { RefundFilters, RefundablePayment } from '../types'
 
@@ -21,16 +22,14 @@ export const useRefundsStore = defineStore('refunds', () => {
   const filters = reactive<RefundFilters>({
     usuarioId: '',
     companyId: '',
-    from: '',
-    to: '',
   })
 
   function listParams() {
-    const params: Record<string, string> = {}
+    const params: Record<string, string> = {
+      timeZone: browserTimeZone(),
+    }
     if (filters.usuarioId) params.usuarioId = filters.usuarioId
     if (filters.companyId) params.companyId = filters.companyId
-    if (filters.from) params.from = filters.from
-    if (filters.to) params.to = filters.to
     return params
   }
 
@@ -89,13 +88,17 @@ export const useRefundsStore = defineStore('refunds', () => {
     const ui = useUiStore()
     const ok = await ui.confirm({
       title: 'Devolver pago',
-      message:
-        `Se enviará la cancelación a la terminal NetPay (Smart Accounts) por ${money(row.importe)}.\n` +
-        `Order: ${row.orderId || '—'}\n` +
-        `Folio: ${row.folioVenta}\n\n` +
-        'Al completar la devolución también se enviará la reimpresión del ticket a la terminal.\n' +
-        'La cancelación debe ser el mismo día (antes de las 8:00 p.m. CDMX). ¿Continuar?',
-      confirmText: 'Devolver (esperando terminal)',
+      message: 'Se enviará la cancelación a la terminal por este cobro.',
+      details: [
+        { label: 'Usuario', value: row.usuarioNombre?.trim() || `ID ${row.usuarioId}` },
+        { label: 'Terminal', value: row.folioTerminal?.trim() || row.storeId || '—' },
+        { label: 'Importe', value: money(row.importe) },
+        { label: 'Order', value: row.orderId || '—' },
+        { label: 'Folio', value: row.folioVenta },
+      ],
+      hint:
+        'Solo cobros de hoy, hasta las 20:00 (hora de Ciudad de México). Al terminar se reimprimirá el ticket.',
+      confirmText: 'Devolver',
       cancelText: 'Cancelar',
       danger: true,
     })
@@ -104,7 +107,7 @@ export const useRefundsStore = defineStore('refunds', () => {
     voidingId.value = row.id
     try {
       await ui.withLoading(async () => {
-        const res = await refundsApi.voidPayment(row.id)
+        const res = await refundsApi.voidPayment(row.id, browserTimeZone())
         if (!res.data.success) {
           throw new Error(res.data.message || 'La devolución no procedió')
         }

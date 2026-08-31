@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { browserUtcOffsetLabel } from '@/shared/utils/formatDate'
 import { useMovementsStore } from '../stores/movements'
 import MovementsList from '../components/MovementsList.vue'
 
@@ -15,13 +16,28 @@ onMounted(() => store.init())
     <div class="page-header">
       <div>
         <h1>Movimientos</h1>
-        <p>Todos los movimientos de terminal · el total suma solo ingresos aplicados</p>
+        <p>
+          Cobros, cancelaciones y reimpresiones de terminal. Horarios en
+          {{ browserUtcOffsetLabel() }}.
+        </p>
       </div>
       <div class="header-actions">
         <div class="stat-chip">
-          <span>{{ data.totalAplicados }} aplicados / {{ data.total }} registros</span>
+          <span>Ingresos aplicados</span>
           <strong>{{ store.money(data.totalImporteAplicado) }}</strong>
         </div>
+        <div class="stat-chip stat-chip-muted">
+          <span>Registros</span>
+          <strong>{{ data.totalAplicados }} / {{ data.total }}</strong>
+        </div>
+        <button
+          class="btn btn-ghost"
+          type="button"
+          :disabled="!data.items.length"
+          @click="store.exportExcel()"
+        >
+          Descargar Excel
+        </button>
         <button
           class="btn btn-ghost"
           type="button"
@@ -46,5 +62,10 @@ onMounted(() => store.init())
 
 .movements-page :deep(.page-header) {
   margin-bottom: 0;
+}
+
+.stat-chip-muted {
+  background: var(--white);
+  border: 1px solid var(--border);
 }
 </style>

@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
 import { useEmpresasStore } from '@/shared/stores/empresas'
+import { formatLocalDateTime } from '@/shared/utils/formatDate'
 import { useRefundsStore } from '../stores/refunds'
 
 const auth = useAuthStore()
@@ -34,24 +35,12 @@ const canManage = () => auth.hasPermission('refunds.manage')
           </option>
         </select>
       </div>
-      <div class="field">
-        <label>Desde</label>
-        <input v-model="filters.from" type="date" />
-      </div>
-      <div class="field">
-        <label>Hasta</label>
-        <input v-model="filters.to" type="date" />
-      </div>
       <button class="btn btn-primary" type="button" @click="store.fetchList()">
         Filtrar
       </button>
     </div>
 
     <p v-if="error" class="error-text" role="alert">{{ error }}</p>
-    <p v-else-if="listMessage" class="hint-text" role="status">{{ listMessage }}</p>
-    <p v-else class="hint-text">
-      NetPay: solo ventas del día con orderId y storeId, cancelables antes de las 20:00 (CDMX).
-    </p>
 
     <div class="card table-wrap">
       <div v-if="loading" class="loading-row">
@@ -59,11 +48,11 @@ const canManage = () => auth.hasPermission('refunds.manage')
         Cargando pagos cancelables…
       </div>
       <div v-else-if="!items.length" class="empty-state">
-        <strong>{{ cancelWindowOpen ? 'Sin pagos cancelables' : 'Fuera de horario NetPay' }}</strong>
+        <strong>{{ cancelWindowOpen ? 'Sin pagos cancelables' : 'Fuera de horario' }}</strong>
         {{
           cancelWindowOpen
-            ? 'No hay cobros del día con orderId/storeId elegibles (o ya fueron cancelados).'
-            : 'La cancelación solo está permitida antes de las 20:00 hora Ciudad de México.'
+            ? 'No hay cobros del día de hoy que se puedan cancelar.'
+            : 'Solo se podrán cancelar los cobros realizados el día de hoy, hasta las 20:00 horas (hora de Ciudad de México).'
         }}
       </div>
       <template v-else>
@@ -74,6 +63,7 @@ const canManage = () => auth.hasPermission('refunds.manage')
               <th>Folio</th>
               <th>Order</th>
               <th>Usuario</th>
+              <th>Terminal</th>
               <th>Empresa</th>
               <th>Importe</th>
               <th>Tarjeta</th>
@@ -82,10 +72,11 @@ const canManage = () => auth.hasPermission('refunds.manage')
           </thead>
           <tbody>
             <tr v-for="row in items" :key="row.id">
-              <td>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</td>
+              <td>{{ formatLocalDateTime(row.fechaTransacciones) }}</td>
               <td>{{ row.folioVenta }}</td>
               <td>{{ row.orderId || '—' }}</td>
               <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
+              <td>{{ row.folioTerminal || row.storeId || '—' }}</td>
               <td>{{ empresas.nombre(row.companyId) }}</td>
               <td>{{ store.money(row.importe) }}</td>
               <td>{{ row.tarjeta || '—' }}</td>
@@ -113,7 +104,7 @@ const canManage = () => auth.hasPermission('refunds.manage')
             <div class="data-card-meta">
               <div class="row">
                 <span>Fecha</span>
-                <b>{{ new Date(row.fechaTransacciones).toLocaleString('es-MX') }}</b>
+                <b>{{ formatLocalDateTime(row.fechaTransacciones) }}</b>
               </div>
               <div class="row">
                 <span>Order</span>
@@ -122,6 +113,10 @@ const canManage = () => auth.hasPermission('refunds.manage')
               <div class="row">
                 <span>Usuario</span>
                 <b>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</b>
+              </div>
+              <div class="row">
+                <span>Terminal</span>
+                <b>{{ row.folioTerminal || row.storeId || '—' }}</b>
               </div>
               <div class="row">
                 <span>Empresa</span>

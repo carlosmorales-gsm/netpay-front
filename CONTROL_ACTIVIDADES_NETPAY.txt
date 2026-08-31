@@ -1,0 +1,81 @@
+================================================================================
+  CONTROL DE ACTIVIDADES — PROYECTO NETPAY (San Martín)
+================================================================================
+  Componentes: netpay-front | api-netpay | Odoo (sale_extensions)
+  Actualizado: 28/08/2026
+================================================================================
+
+
+03/08/2026
+  - Arranque del proyecto y entorno de desarrollo (Node 22, Vite).
+  - Panel administrativo NetPay: login JWT, usuarios, roles, permisos y CRUD de terminales.
+  - Backend api-netpay extendido con auth admin, empresas y consulta de movimientos.
+  - Branding San Martín/GSM, menú por secciones, exportación PDF y estructura modular del front.
+  - Integración con usuarios Odoo (búsqueda y asignación de terminales).
+  - Rama develop creada y subida al remoto.
+
+
+04/08/2026
+  - Integración Odoo: botón "Pago con terminal" en orden de pago (cobro síncrono vía api-netpay).
+  - Configuración de diarios bancarios por empresa para pagos con terminal.
+  - Seguridad Odoo → API con API Key.
+  - Pantalla de movimientos global con filtros e indicador de ingresos aplicados.
+  - Módulo de devoluciones (cancelación Smart Accounts) en API y panel admin.
+  - Sesión persistente en el front y depuración de endpoints no usados.
+
+
+05/08/2026
+  - Diseño responsive del panel (PC, tablet y móvil).
+  - Reimpresión de ticket desde movimientos y auto-reimpresión tras pago en Odoo.
+  - Vinculación de terminal física al pago registrado en Odoo.
+
+
+06/08/2026
+  - Credenciales prellenadas en login (solo desarrollo).
+  - Ajuste de auto-reimpresión a 3 segundos.
+  - Solicitud de módulo de logs admin (pendiente).
+
+
+12/08/2026
+  - Eliminación de Vue DevTools del proyecto front.
+  - Cuestionario de certificación NetPay v4.4.1 respondido (Excel + script Python).
+
+
+19/08/2026
+  - Análisis de requisitos de certificación aún no cubiertos (timeout, token, devoluciones Print-Ticket, lock multi-instancia, ticket personalizado).
+
+
+24/08/2026
+  - Validación de números celular en formulario de conciliación VD (Odoo, capa front).
+
+
+27/08/2026
+  - Reimpresión automática de ticket tras devolución exitosa en el panel.
+  - Distinción débito/crédito en pagos NetPay (API + Odoo: método de pago y diario contable).
+
+
+28/08/2026
+  - Documento de control de actividades.
+
+
+================================================================================
+  ESTADO GENERAL (28/08/2026)
+================================================================================
+
+  COMPLETADO
+    - Panel admin: terminales, movimientos, devoluciones, usuarios, roles.
+    - Cobro con terminal desde Odoo integrado con NetPay Smart Accounts.
+    - Devoluciones, reimpresión de tickets y registro de pagos en Odoo.
+    - Seguridad: JWT (panel), API Key (Odoo), permisos por pantalla.
+    - Certificación: cuestionario documentado.
+
+  PENDIENTE
+    - Módulo de logs para administrador.
+    - Mostrar tipo de tarjeta en movimientos del panel.
+    - Gaps de certificación: timeout 180s, token periódico, flujo Print-Ticket en devoluciones, lock por terminal.
+    - Actualizar módulo sale_extensions en instancias Odoo.
+
+
+================================================================================
+  FIN
+================================================================================

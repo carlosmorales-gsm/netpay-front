@@ -9,9 +9,16 @@ export type ToastItem = {
   message: string
 }
 
+export type ConfirmDetail = {
+  label: string
+  value: string
+}
+
 type ConfirmOptions = {
   title?: string
   message: string
+  details?: ConfirmDetail[]
+  hint?: string
   confirmText?: string
   cancelText?: string
   danger?: boolean
@@ -30,6 +37,8 @@ export const useUiStore = defineStore('ui', () => {
   const confirmState = ref<ConfirmState>({
     open: false,
     message: '',
+    details: [],
+    hint: '',
     title: 'Confirmar',
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
@@ -87,6 +96,8 @@ export const useUiStore = defineStore('ui', () => {
         open: true,
         title: options.title ?? 'Confirmar',
         message: options.message,
+        details: options.details ?? [],
+        hint: options.hint ?? '',
         confirmText: options.confirmText ?? 'Confirmar',
         cancelText: options.cancelText ?? 'Cancelar',
         danger: options.danger ?? false,

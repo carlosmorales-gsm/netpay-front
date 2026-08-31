@@ -3,7 +3,9 @@ import { defineStore } from 'pinia'
 import { useEmpresasStore } from '@/shared/stores/empresas'
 import { useUiStore } from '@/shared/stores/ui'
 import { getApiErrorMessage } from '@/shared/utils/apiError'
+import { downloadTableExcel } from '@/shared/utils/exportExcel'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
+import { browserUtcOffsetLabel, formatLocalDateTime } from '@/shared/utils/formatDate'
 import { movementsApi } from '../api/movements.api'
 import type {
   Movement,
@@ -138,37 +140,83 @@ export const useMovementsStore = defineStore('movements', () => {
     }
   }
 
-  function exportPdf() {
-    if (!data.value.items.length) return
+  function clearFilters() {
+    filters.usuarioId = ''
+    filters.companyId = ''
+    filters.tipoTransaccion = ''
+    filters.from = ''
+    filters.to = ''
+    void fetchList()
+  }
+
+  function hasActiveFilters() {
+    return Boolean(
+      filters.usuarioId ||
+        filters.companyId ||
+        filters.tipoTransaccion ||
+        filters.from ||
+        filters.to,
+    )
+  }
+
+  function exportMeta() {
     const empresas = useEmpresasStore()
     const userLabel = filters.usuarioId
       ? userOptions.value.find((u) => String(u.usuarioId) === filters.usuarioId)?.nombreUsuario ||
         filters.usuarioId
       : 'Todos'
-    downloadTablePdf({
+    const stamp = new Date().toISOString().slice(0, 10)
+    return {
       title: 'Movimientos NetPay',
-      filename: `movimientos-${new Date().toISOString().slice(0, 10)}.pdf`,
-      subtitle: `Usuario: ${userLabel} · Aplicado: ${money(data.value.totalImporteAplicado)} · Registros: ${data.value.total}`,
+      subtitle: `Usuario: ${userLabel} · Aplicado: ${money(data.value.totalImporteAplicado)} · Registros: ${data.value.total} · Horario ${browserUtcOffsetLabel()}`,
+      filenameBase: `movimientos-${stamp}`,
       columns: [
-        { header: 'Fecha', key: 'fecha' },
-        { header: 'Tipo', key: 'tipo' },
-        { header: 'Folio', key: 'folio' },
-        { header: 'Order', key: 'orderId' },
-        { header: 'Usuario', key: 'usuario' },
-        { header: 'Empresa', key: 'empresa' },
-        { header: 'Importe', key: 'importe' },
-        { header: 'Estatus', key: 'estatus' },
+        { header: 'Fecha', key: 'fecha', width: 20 },
+        { header: 'Tipo', key: 'tipo', width: 16 },
+        { header: 'Folio', key: 'folio', width: 14 },
+        { header: 'Order', key: 'orderId', width: 28 },
+        { header: 'Usuario', key: 'usuario', width: 22 },
+        { header: 'Terminal', key: 'terminal', width: 16 },
+        { header: 'Empresa', key: 'empresa', width: 28 },
+        { header: 'Importe', key: 'importe', width: 14 },
+        { header: 'Estatus', key: 'estatus', width: 18 },
       ],
       rows: data.value.items.map((row) => ({
-        fecha: new Date(row.fechaTransacciones).toLocaleString('es-MX'),
+        fecha: formatLocalDateTime(row.fechaTransacciones),
         tipo: row.tipoTransaccionDesc || '—',
         folio: row.folioVenta,
         orderId: row.orderId || '—',
         usuario: row.usuarioNombre || `ID ${row.usuarioId}`,
+        terminal: row.folioTerminal || row.storeId || '—',
         empresa: empresas.nombre(row.companyId),
-        importe: money(row.importe),
+        importe: Number(row.importe) || 0,
         estatus: row.estatus?.label || (row.aplicado ? 'Aplicado' : row.tipoRespuesta || '—'),
       })),
+    }
+  }
+
+  function exportPdf() {
+    if (!data.value.items.length) return
+    const { title, subtitle, filenameBase, columns, rows } = exportMeta()
+    downloadTablePdf({
+      title,
+      subtitle,
+      filename: `${filenameBase}.pdf`,
+      columns,
+      rows: rows.map((row) => ({ ...row, importe: money(Number(row.importe)) })),
+    })
+  }
+
+  function exportExcel() {
+    if (!data.value.items.length) return
+    const { title, subtitle, filenameBase, columns, rows } = exportMeta()
+    downloadTableExcel({
+      title,
+      subtitle,
+      filename: `${filenameBase}.xlsx`,
+      sheetName: 'Movimientos',
+      columns: columns.map((c) => (c.key === 'importe' ? { ...c, type: 'number' as const } : c)),
+      rows,
     })
   }
 
@@ -186,5 +234,8 @@ export const useMovementsStore = defineStore('movements', () => {
     canReprint,
     reprintTicket,
     exportPdf,
+    exportExcel,
+    clearFilters,
+    hasActiveFilters,
   }
 })

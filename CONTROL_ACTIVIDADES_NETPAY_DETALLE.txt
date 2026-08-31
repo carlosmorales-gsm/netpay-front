@@ -1,0 +1,338 @@
+================================================================================
+  CONTROL DE ACTIVIDADES — PROYECTO NETPAY (San Martín) — DETALLE
+================================================================================
+  Proyectos involucrados:
+    - netpay-front         → Panel administrativo Vue 3 + Vite + Pinia
+    - api-netpay           → API NestJS (cobro, terminales, auth admin)
+    - sale_extensions      → Módulo Odoo (pago con terminal, config diarios)
+    - sale_order_reception → Odoo (conciliación VD, campos celular)
+
+  Generado: 28/08/2026
+  Fuente: historial de desarrollo, commits git y conversaciones del proyecto
+================================================================================
+
+
+--------------------------------------------------------------------------------
+03/08/2026 — Arranque del proyecto y panel administrativo base
+--------------------------------------------------------------------------------
+
+[03/08/2026] netpay-front — Configuración inicial del entorno de desarrollo
+  - Resolución de conflictos de dependencias (oxlint / eslint-plugin-oxlint).
+  - Instalación de Node.js 22 LTS (requerido por Vite).
+  - npm install y verificación del proyecto.
+
+[03/08/2026] netpay-front — Configuración Vite
+  - server.open: true (abrir navegador al ejecutar npm run dev).
+  - Hot reload confirmado (comportamiento nativo de Vite).
+
+[03/08/2026] Planificación — Sistema de administración de terminales NetPay
+  - Decisión: extender api-netpay (NestJS) con auth JWT, usuarios, roles y CRUD.
+  - Decisión: usuarios locales del panel + campo odooUserId para terminales.
+  - Regla fija: NO modificar reglas de cobro en gestion-de-cobro ni transacciones.
+
+[03/08/2026] api-netpay — Backend admin (implementación completa)
+  - Esquema DB: admin_users, roles, permissions, role_permissions, empresas.
+  - Seed automático: usuario admin (admin@sanmartin.com.mx / AdminSM2026!).
+  - Permisos por pantalla: users, roles, terminals, movements, refunds.
+  - Auth JWT: login, refresh token, /auth/me, guards de permisos.
+  - Exclusión de JWT en rutas /bill/* y terminal-response (webhooks NetPay).
+  - CRUD usuarios admin, roles y terminales (join_usuarios_terminales).
+  - GET movimientos (lectura) con filtros.
+  - Contraseñas encriptadas con bcrypt en base de datos.
+
+[03/08/2026] netpay-front — Panel admin (implementación completa)
+  - Login seguro con JWT + interceptores axios + refresh automático.
+  - Layout con menú por permisos y branding San Martín / GSM.
+  - Pantallas: Terminales, Movimientos, Usuarios, Roles.
+  - Pantalla Login con redirección según permisos del usuario.
+
+[03/08/2026] netpay-front — Mejora UX y branding GSM
+  - Colores, logos y tipografías alineados con gsm-website.
+  - Login rediseñado (show password, errores locales, layout mejorado).
+  - Corrección flujo post-login (store + router + persistencia).
+
+[03/08/2026] api-netpay — Tabla empresas
+  - Entidad empresas: id 1 = San Martín, id 2 = Inhumaciones.
+  - GET /admin/empresas para selects del front.
+
+[03/08/2026] netpay-front — UX escritorio
+  - Layout adaptado para PC (no solo móvil).
+  - Corrección CRUD terminales: adminUserId vs usuario Odoo (usuarios distintos).
+  - Campos de búsqueda más compactos.
+
+[03/08/2026] netpay-front — Menú, PDF y layout
+  - Menú colapsable agrupado por sección (Operación, Reportes, Admin).
+  - Descarga PDF desde listados (jspdf + autotable).
+  - Eliminación duplicado de cerrar sesión / nombre usuario.
+  - Roles agrupados dinámicamente por sección.
+  - Corrección botón menú duplicado y títulos repetidos.
+
+[03/08/2026] netpay-front — Reestructuración modular escalable
+  - Estructura modules/{seccion}/{pantalla}/ con api, stores, components, views.
+  - Separación List.vue + FormModal.vue por pantalla.
+  - Stores Pinia por pantalla para llamadas al backend.
+  - Carpeta shared/ para código transversal.
+  - Documento AGENTS.md con guía para desarrolladores y agentes IA.
+
+[03/08/2026] api-netpay — Integración api-odoo-gsm
+  - Proxy GET /admin/users/odoo/:ref y /admin/terminals/odoo-users/:ref.
+  - Búsqueda de usuario Odoo por nombre/login desde modal en terminales.
+
+[03/08/2026] netpay-front — Terminales (mejoras)
+  - Modal de búsqueda/selección de usuario Odoo (no captura manual de IDs).
+  - Autocompletar por nombre de usuario en listado.
+  - Switch activo/inactivo en lugar de botón desactivar.
+  - Botón Test: cobro de prueba $0.10 MXN con datos de la terminal.
+  - Validación: no duplicar usuario+empresa en join_usuarios_terminales.
+  - Componentes globales AppToast, AppConfirm, AppLoading (sin alert/confirm nativos).
+  - Loading global al cargar pantallas desde backend.
+  - Fix secuencia PK en join_usuarios_terminales.
+
+[03/08/2026] netpay-front — Git
+  - Rama develop creada y cambios subidos al remoto.
+  - .env agregado a .gitignore.
+
+
+--------------------------------------------------------------------------------
+04/08/2026 — Integración Odoo, movimientos, devoluciones y seguridad
+--------------------------------------------------------------------------------
+
+[04/08/2026] netpay-front — Sesión persistente
+  - pinia-plugin-persistedstate en auth store (localStorage netpay.auth).
+
+[04/08/2026] netpay-front + api-netpay — Movimientos globales
+  - Vista global (no "Mis movimientos").
+  - Nombre de usuario Odoo en lugar de ID numérico.
+  - Select de usuarios con movimientos (no filtro por número).
+  - UX menos apretada; indicador de ingresos aplicados.
+  - Tabla muestra todos los estatus; indicador suma solo pagos aplicados.
+
+[04/08/2026] Odoo + api-netpay — Pago con terminal en payment.order
+  - Botón "Pago con terminal" en orden de pago Odoo.
+  - Wizard modal: monto, cuotas a afectar, validaciones de saldo.
+  - Endpoint POST /bill/charge-card-terminal-wait (espera síncrona terminal).
+  - Flujo: Odoo → api-netpay → terminal NetPay → callback → respuesta a Odoo.
+  - Registro de pago en Odoo reutilizando payment.order.register.wizard.
+  - Endpoint POST /bill/terminal-payment-finalize (Odoo reporta éxito/error).
+  - Configuración ngrok para Odoo.sh apuntando a api-netpay local.
+  - Fix payload DTO (saler_order, sale_id, payment_order_id, etc.).
+
+[04/08/2026] Odoo — Configuración diarios terminales
+  - Pantalla Ajustes → Cuentas bancarias terminales (netpay.terminal.journal.config).
+  - journal_id por empresa para pagos con terminal.
+  - Modal "Registrar pago" sin cambios (solo el botón terminal usa config global).
+
+[04/08/2026] api-netpay + Odoo — Seguridad Odoo → API
+  - ApiKeyGuard con header X-Api-Key (ODOO_API_KEY).
+  - Parámetro Odoo: sale_extensions.netpay_api_key.
+
+[04/08/2026] api-netpay — Mejoras cobro terminal
+  - folioNumber único por intento de pago (múltiples pagos en misma orden).
+  - Error descriptivo si usuario Odoo no tiene terminal asignada (nombre usuario/empresa).
+  - Odoo: cierre modal sin reload; refresco de datos de la orden.
+
+[04/08/2026] Odoo — Ajustes UX wizard terminal
+  - Campo "Cuotas a afectar" en solo lectura.
+
+[04/08/2026] netpay-front — Refactor estructura (commit)
+  - Reorganización modules/{seccion}/{pantalla}/, dependencias actualizadas.
+
+[04/08/2026] api-netpay + netpay-front — Módulo Devoluciones
+  - Backend: GET /admin/refunds, POST /admin/refunds/:id/void (void-transaction-wait).
+  - Smart Accounts isSmartAccounts según documentación NetPay.
+  - Filtro: solo transacciones cancelables (mismo día, antes 20:00 CDMX).
+  - Estatus "Devuelto" en pago original tras void exitoso.
+  - Front: pantalla Devoluciones en Operación + permisos refunds.view/refunds.manage.
+  - Refresh de permisos sin cerrar sesión al asignar rol.
+
+[04/08/2026] api-netpay — Depuración endpoints
+  - Revisión de endpoints usados por front y Odoo; limpieza de no utilizados.
+
+[04/08/2026] api-netpay — Seed ejecutado en entorno local.
+
+
+--------------------------------------------------------------------------------
+05/08/2026 — Responsivo, reimpresión y terminal_id en Odoo
+--------------------------------------------------------------------------------
+
+[05/08/2026] netpay-front — Diseño responsive (commit + iteraciones)
+  - PC: sidebar fija + tablas.
+  - Tablet: menú drawer/hamburguesa.
+  - Móvil: listados en cards, filtros apilados, modales casi fullscreen.
+  - Safe-area para notches; botones táctiles más grandes.
+  - Ajustes de espaciado en filtros, headers y cards.
+
+[05/08/2026] netpay-front — Filtro tipos de movimiento
+  - Select de tipos de transacción en pantalla Movimientos.
+  - Fix select vacío (endpoint/fuente de datos corregido).
+
+[05/08/2026] netpay-front — Login
+  - Reacomodo vertical del formulario de login.
+
+[05/08/2026] api-netpay + Odoo — Asignación terminal_id en pago
+  - api-netpay devuelve folioTerminal en respuesta wait.
+  - Odoo busca terminal.name = folio y guarda terminal_id en account.payment.
+
+[05/08/2026] netpay-front + api-netpay — Reimpresión manual de ticket
+  - Icono reimprimir en movimientos aplicados.
+  - POST /admin/movements/:id/reprint → NetPay Smart Accounts reprint (folioId).
+  - Fix error 400 en reprint (payload/DTO corregido).
+
+[05/08/2026] api-netpay — Auto-reimpresión post-pago Odoo
+  - Tras terminal-payment-finalize con success=true, espera y reimprime ticket.
+  - Implementado inicialmente con delay de 5 segundos.
+
+
+--------------------------------------------------------------------------------
+06/08/2026 — Dev helpers y ajustes auto-reprint
+--------------------------------------------------------------------------------
+
+[06/08/2026] netpay-front — Credenciales dev prellenadas
+  - LoginView: email y password por defecto solo en import.meta.env.DEV.
+
+[06/08/2026] api-netpay — Auto-reimpresión
+  - Delay reducido de 5s a 3s (AUTO_REPRINT_DELAY_MS = 3000).
+
+[06/08/2026] Solicitud — Módulo logs admin (PENDIENTE)
+  - Pantalla solo administrador con filtros por palabra clave, usuario y venta.
+  - No implementado a la fecha de este documento.
+
+
+--------------------------------------------------------------------------------
+12/08/2026 — Certificación NetPay y limpieza DevTools
+--------------------------------------------------------------------------------
+
+[12/08/2026] netpay-front — Remoción Vue DevTools
+  - Eliminado vite-plugin-vue-devtools de vite.config.ts y package.json.
+
+[12/08/2026] Certificación NetPay v4.4.1 — Cuestionario
+  - Revisión pestaña Cuestionario del Excel de certificación Smart PinPad 2.6.
+  - Respuestas documentadas pregunta por pregunta (62 ítems).
+  - Script: scripts/fill_certification_excel.py
+  - Output: Resultados_Certificacion_NetPay_RESPONDIDO.xlsx
+
+
+--------------------------------------------------------------------------------
+19/08/2026 — Análisis gaps de certificación
+--------------------------------------------------------------------------------
+
+[19/08/2026] Consultoría — Especificaciones no cumplidas (identificadas)
+  1. Timeout de espera terminal 180s (actual ~120-130s).
+  2. Renovación periódica del token OAuth NetPay.
+  3. Flujo devoluciones Print-Ticket + orderId largo (vs void directo actual).
+  4. Lock anti multi-instancia por terminal física (storeId + serie).
+  5. Ticket personalizado / campos adicionales en comprobante.
+
+[19/08/2026] Consultoría — Lock multi-instancia
+  - Explicación: prevenir 2 cobros simultáneos en la misma terminal física.
+  - Evaluación operativa: riesgo bajo con terminal por área/sucursal.
+
+
+--------------------------------------------------------------------------------
+24/08/2026 — Validación celular conciliación VD
+--------------------------------------------------------------------------------
+
+[24/08/2026] sale_order_reception — Validación teléfonos (Odoo front JS)
+  - Campos con_celular1 / con_celular2 en formulario conciliación VD.
+  - Validación en phone_widget.js: 10 dígitos, formato (XXX) XXX-XXXX.
+  - Rechazo de números dummy/lazy; solo capa front (sin cambios Python).
+
+
+--------------------------------------------------------------------------------
+27/08/2026 — Débito/crédito, reprint devoluciones
+--------------------------------------------------------------------------------
+
+[27/08/2026] netpay-front — Reimpresión post-devolución (commit)
+  - Tras void exitoso en Devoluciones, llama POST /admin/movements/:id/reprint.
+  - Actualización AGENTS.md con flujos refunds y reprint.
+
+[27/08/2026] api-netpay — Propagación cardType / cardTypeName
+  - terminal-response.waiter.ts: cardType y cardTypeName en TerminalWaitResult.
+  - transacciones.service.ts: guarda cardType en traceability y notifica waiter.
+  - gestion-de-cobro.service.ts: poll DB incluye cardType en respuesta wait.
+  - Build NestJS verificado (npm run build OK).
+
+[27/08/2026] Odoo sale_extensions — Método y diario según tipo tarjeta
+  - cardType NetPay: C = Tarjeta de Crédito, D = Tarjeta de Débito.
+  - Diario: user.credit_journal_id / user.debit_journal_id o fallback config terminal.
+  - finalize hacia api-netpay incluye card_type y card_type_name.
+  - Versión módulo incrementada (sale_extensions).
+
+
+--------------------------------------------------------------------------------
+28/08/2026 — Documentación
+--------------------------------------------------------------------------------
+
+[28/08/2026] netpay-front — Control de actividades
+  - CONTROL_ACTIVIDADES_NETPAY.txt (resumen general).
+  - CONTROL_ACTIVIDADES_NETPAY_DETALLE.txt (este documento).
+
+
+================================================================================
+  RESUMEN POR COMPONENTE (estado al 28/08/2026)
+================================================================================
+
+NETPAY-FRONT (Panel admin)
+  [OK] Login JWT + sesión persistente + credenciales dev
+  [OK] Terminales CRUD + test $0.10 + búsqueda usuario Odoo
+  [OK] Movimientos globales + filtros + PDF + reimprimir ticket
+  [OK] Devoluciones Smart Accounts + reprint post-void
+  [OK] Usuarios y Roles con permisos por sección
+  [OK] UI responsive PC/tablet/móvil + branding GSM
+  [OK] AGENTS.md guía de estructura
+  [PEND] Módulo logs admin (filtros usuario/venta/keyword)
+  [PEND] Mostrar tipo tarjeta (débito/crédito) en listado movimientos
+
+API-NETPAY (NestJS)
+  [OK] Auth admin JWT + refresh + permisos
+  [OK] CRUD terminales, usuarios, roles, empresas
+  [OK] Cobro terminal wait + finalize + void wait Smart Accounts
+  [OK] Reprint ticket + auto-reprint 3s post-pago Odoo
+  [OK] ApiKeyGuard para llamadas Odoo
+  [OK] cardType/cardTypeName en wait y traceability
+  [OK] Refunds list/void con reglas NetPay (mismo día, 20:00 CDMX)
+  [PEND] GET /admin/logs con permiso logs.view
+  [PEND] Timeout 180s certificación
+  [PEND] Lock por terminal física (multi-instancia)
+  [PEND] Flujo Print-Ticket para devoluciones certificación
+
+ODOO (sale_extensions)
+  [OK] Botón y wizard Pago con terminal en payment.order
+  [OK] Config diarios terminales por empresa
+  [OK] Finalize a api-netpay (éxito y error)
+  [OK] terminal_id en account.payment por folio terminal
+  [OK] folioNumber variable + UX post-pago sin reload
+  [OK] Cuotas a afectar solo lectura
+  [OK] Método pago y diario según cardType (débito/crédito)
+  [PEND] Actualizar módulo en instancias (-u sale_extensions)
+
+CERTIFICACIÓN NETPAY v4.4.1
+  [OK] Cuestionario respondido (Excel + script Python)
+  [GAP] Timeout 180s, token periódico, Print-Ticket devoluciones
+  [GAP] Lock multi-instancia, ticket personalizado
+
+
+================================================================================
+  COMMITS GIT RELEVANTES (netpay-front / rama develop)
+================================================================================
+
+  2026-08-03  Initial NetPay admin panel with GSM branding and auth
+  2026-08-04  Update dependencies and restructure project layout
+  2026-08-04  Implement persistent authentication state and enhance movements
+  2026-08-04  Enhance movements reporting and add refunds functionality
+  2026-08-05  Enhance mobile responsiveness and UI components
+  2026-08-27  Implement refunds reprint functionality and update agent docs
+
+
+================================================================================
+  CREDENCIALES DEV (referencia)
+================================================================================
+
+  Panel NetPay:  admin@sanmartin.com.mx / AdminSM2026!
+  API local:     http://localhost:3017
+  Odoo API key:  sale_extensions.netpay_api_key (parámetro sistema)
+
+
+================================================================================
+  FIN DEL DOCUMENTO
+================================================================================

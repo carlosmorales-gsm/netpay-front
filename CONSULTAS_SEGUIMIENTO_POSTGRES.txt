@@ -1,0 +1,276 @@
+================================================================================
+  CONSULTAS BÁSICAS POSTGRES — SEGUIMIENTO NETPAY
+================================================================================
+  Base: api-netpay
+  Tipos: 1 = cobro | 2 = cancelación | 3 = reimpresión
+  tipo_respuesta: 00 = aprobado | vacío = sin respuesta | otro = declinado/error
+  Fechas en UTC (timestamptz). En México CDMX: AT TIME ZONE 'America/Mexico_City'
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1) Últimos movimientos
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.tipo_transaccion,
+  CASE t.tipo_transaccion
+    WHEN 1 THEN 'Cobro'
+    WHEN 2 THEN 'Cancelación'
+    WHEN 3 THEN 'Reimpresión'
+    ELSE 'Otro'
+  END AS tipo,
+  t.tipo_respuesta,
+  t.aplicado,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.store_id,
+  t.usuario_id,
+  t.company_id,
+  t.tarjeta
+FROM transacciones t
+ORDER BY t.id DESC
+LIMIT 50;
+
+
+--------------------------------------------------------------------------------
+2) Cobros de hoy (hora CDMX)
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.tipo_respuesta,
+  t.aplicado,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.store_id,
+  t.usuario_id
+FROM transacciones t
+WHERE t.tipo_transaccion = 1
+  AND (t.fecha_transacciones AT TIME ZONE 'America/Mexico_City')::date
+      = (now() AT TIME ZONE 'America/Mexico_City')::date
+ORDER BY t.id DESC;
+
+
+--------------------------------------------------------------------------------
+3) Pendientes / timeout (la terminal no respondió)
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.importe,
+  t.folio_venta,
+  t.store_id,
+  t.usuario_id,
+  t.company_id
+FROM transacciones t
+WHERE t.tipo_transaccion = 1
+  AND t.tipo_respuesta IS NULL
+ORDER BY t.id DESC
+LIMIT 50;
+
+
+--------------------------------------------------------------------------------
+4) Aprobados no aplicados en Odoo
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.pago_sistema_id
+FROM transacciones t
+WHERE t.tipo_transaccion = 1
+  AND t.tipo_respuesta = '00'
+  AND t.aplicado = false
+ORDER BY t.id DESC;
+
+
+--------------------------------------------------------------------------------
+5) Declinados
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.tipo_respuesta,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.traceability->>'message' AS mensaje
+FROM transacciones t
+WHERE t.tipo_transaccion = 1
+  AND t.tipo_respuesta IS NOT NULL
+  AND t.tipo_respuesta <> '00'
+ORDER BY t.id DESC
+LIMIT 50;
+
+
+--------------------------------------------------------------------------------
+6) Buscar por folio de venta, order NetPay o folioNumber
+--------------------------------------------------------------------------------
+
+-- Cambiar el valor:
+-- :folio  ej. 2110009769
+-- :order  ej. 260828144201-2841348218
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.tipo_transaccion,
+  t.tipo_respuesta,
+  t.aplicado,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.traceability->>'folio_number' AS folio_number,
+  t.store_id
+FROM transacciones t
+WHERE t.folio_venta = 'CAMBIAR_FOLIO'
+   OR t.order_id = 'CAMBIAR_ORDER'
+   OR t.traceability->>'folio_number' ILIKE '%CAMBIAR_FOLIO%'
+ORDER BY t.id DESC;
+
+
+--------------------------------------------------------------------------------
+7) Cancelaciones (devoluciones) y cobro original
+--------------------------------------------------------------------------------
+
+SELECT
+  c.id AS cancel_id,
+  c.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cancel_cdmx,
+  c.tipo_respuesta AS codigo_cancel,
+  c.importe,
+  c.order_id,
+  v.id AS venta_id,
+  v.aplicado AS venta_aplicada,
+  v.traceability->>'devuelto' AS marcada_devuelta,
+  v.traceability->>'devolucion_transaccion_id' AS id_devolucion
+FROM transacciones c
+LEFT JOIN transacciones v
+  ON v.order_id = c.order_id
+ AND v.tipo_transaccion = 1
+WHERE c.tipo_transaccion = 2
+ORDER BY c.id DESC
+LIMIT 50;
+
+
+--------------------------------------------------------------------------------
+8) Reimpresiones
+--------------------------------------------------------------------------------
+
+SELECT
+  t.id,
+  t.fecha_transacciones AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  t.folio_venta,
+  t.order_id,
+  t.traceability->>'folio_id' AS folio_id,
+  t.traceability->>'reprint_mode' AS modo,
+  t.store_id
+FROM transacciones t
+WHERE t.tipo_transaccion = 3
+ORDER BY t.id DESC
+LIMIT 50;
+
+
+--------------------------------------------------------------------------------
+9) Detalle + bitácora de una transacción
+--------------------------------------------------------------------------------
+
+-- Cambiar el id:
+SELECT
+  t.id,
+  t.tipo_transaccion,
+  t.tipo_respuesta,
+  t.aplicado,
+  t.importe,
+  t.folio_venta,
+  t.order_id,
+  t.store_id,
+  t.pago_sistema_id,
+  t.traceability
+FROM transacciones t
+WHERE t.id = 0;   -- CAMBIAR ID
+
+SELECT
+  l.id,
+  l.created_at AT TIME ZONE 'America/Mexico_City' AS fecha_cdmx,
+  l.tipo_respuesta,
+  l.payload
+FROM log_transacciones l
+WHERE l.transaccion_id = 0   -- CAMBIAR ID
+ORDER BY l.id;
+
+
+--------------------------------------------------------------------------------
+10) Terminales asignadas
+--------------------------------------------------------------------------------
+
+SELECT
+  j.id,
+  j.usuario_id,
+  j.nombre_usuario,
+  j.company_id,
+  j.store_id,
+  j.folio_terminal,
+  j.activo,
+  j.fecha_asignacion
+FROM join_usuarios_terminales j
+ORDER BY j.company_id, j.usuario_id;
+
+
+--------------------------------------------------------------------------------
+11) Candado de terminal (pregunta 32 — dos PCs a la misma Pax)
+--------------------------------------------------------------------------------
+
+-- Quién está ocupando una terminal ahora
+SELECT
+  lock_key,
+  store_id,
+  serial_number,
+  operation,
+  locked_at AT TIME ZONE 'America/Mexico_City' AS locked_cdmx,
+  now() - locked_at AS lleva
+FROM terminal_locks
+ORDER BY locked_at DESC;
+
+-- Soltar un candado atorado (solo si la operación ya murió)
+-- DELETE FROM terminal_locks WHERE lock_key = 'STOREID|SERIE';
+
+
+--------------------------------------------------------------------------------
+12) Resumen del día (CDMX)
+--------------------------------------------------------------------------------
+
+SELECT
+  CASE t.tipo_transaccion
+    WHEN 1 THEN 'Cobro'
+    WHEN 2 THEN 'Cancelación'
+    WHEN 3 THEN 'Reimpresión'
+    ELSE 'Otro'
+  END AS tipo,
+  COUNT(*) AS cantidad,
+  COUNT(*) FILTER (WHERE t.tipo_respuesta = '00') AS ok_00,
+  COUNT(*) FILTER (WHERE t.tipo_respuesta IS NULL) AS sin_respuesta,
+  COUNT(*) FILTER (WHERE t.aplicado) AS aplicados,
+  COALESCE(SUM(t.importe) FILTER (
+    WHERE t.tipo_transaccion = 1 AND t.tipo_respuesta = '00' AND t.aplicado
+  ), 0) AS importe_aplicado
+FROM transacciones t
+WHERE (t.fecha_transacciones AT TIME ZONE 'America/Mexico_City')::date
+      = (now() AT TIME ZONE 'America/Mexico_City')::date
+GROUP BY t.tipo_transaccion
+ORDER BY t.tipo_transaccion;
+
+
+================================================================================
+  FIN
+================================================================================

@@ -12,6 +12,7 @@ export type RefundablePayment = {
   tipoTransaccionDesc: string | null
   aplicado: boolean
   storeId: string | null
+  folioTerminal: string | null
   companyId: number | null
   tarjeta: string | null
 }
@@ -21,14 +22,13 @@ export type RefundsResponse = {
   total: number
   cancelWindowOpen?: boolean
   cancelCutoffLabel?: string
+  todayLabel?: string
   message?: string
 }
 
 export type RefundFilters = {
   usuarioId: string
   companyId: string
-  from: string
-  to: string
 }
 
 export type VoidResult = {
