@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useEmpresasStore } from '@/shared/stores/empresas'
 import { formatLocalDateParts } from '@/shared/utils/formatDate'
 import { MOVEMENT_TYPE_OPTIONS, useMovementsStore } from '../stores/movements'
+import MovementDetailPanel from './MovementDetailPanel.vue'
 
 const store = useMovementsStore()
 const empresas = useEmpresasStore()
@@ -181,15 +182,7 @@ function shortCompany(name: string) {
             </tr>
             <tr v-if="expandedId === row.id" class="row-detail">
               <td colspan="10">
-                <div class="detail">
-                  <p class="detail-summary">{{ row.detalle?.resumen || 'Sin detalle de respuesta' }}</p>
-                  <dl class="detail-grid">
-                    <div v-for="campo in row.detalle?.campos || []" :key="campo.label" class="detail-item">
-                      <dt>{{ campo.label }}</dt>
-                      <dd>{{ campo.value }}</dd>
-                    </div>
-                  </dl>
-                </div>
+                <MovementDetailPanel :row="row" />
               </td>
             </tr>
             </template>
@@ -247,15 +240,7 @@ function shortCompany(name: string) {
             >
               {{ expandedId === row.id ? 'Ocultar respuesta' : 'Ver respuesta' }}
             </button>
-            <div v-if="expandedId === row.id" class="detail">
-              <p class="detail-summary">{{ row.detalle?.resumen || 'Sin detalle de respuesta' }}</p>
-              <dl class="detail-grid">
-                <div v-for="campo in row.detalle?.campos || []" :key="campo.label" class="detail-item">
-                  <dt>{{ campo.label }}</dt>
-                  <dd>{{ campo.value }}</dd>
-                </div>
-              </dl>
-            </div>
+            <MovementDetailPanel v-if="expandedId === row.id" :row="row" />
           </article>
         </div>
       </template>
@@ -367,42 +352,9 @@ function shortCompany(name: string) {
   max-width: none;
 }
 
-.detail-summary {
-  margin: 0 0 0.85rem;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem 1.25rem;
-  margin: 0;
-}
-
-.detail-item dt {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin-bottom: 0.2rem;
-}
-
-.detail-item dd {
-  margin: 0;
-  font-weight: 500;
-  word-break: break-word;
-}
-
 .detail-toggle {
   width: 100%;
   margin-top: 0.15rem;
-}
-
-@media (max-width: 900px) {
-  .detail-grid {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 .when {

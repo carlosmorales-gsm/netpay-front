@@ -122,7 +122,7 @@ ANSWERS = {
     32: (
         "Sí. Odoo bloquea la pantalla mientras espera el cobro. "
         "En el panel se deshabilita la acción de la fila en curso. "
-        "Además el servidor bloquea por storeId y número de serie: si otra PC intenta cobro, cancelación o reimpresión a la misma terminal, recibe que está ocupada hasta que termine o pasen ~3 minutos."
+        "Además el servidor bloquea por número de serie de la terminal: si otra PC intenta cobro, cancelación o reimpresión a la misma Pax, recibe que está ocupada hasta que termine o pasen ~3 minutos."
     ),
     33: "No. Es operación asistida por cajero. No es kiosco ni autoatendido.",
     49: (

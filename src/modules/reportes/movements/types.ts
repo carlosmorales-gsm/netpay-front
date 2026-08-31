@@ -22,6 +22,8 @@ export type Movement = {
     resumen: string
     campos: Array<{ label: string; value: string }>
   }
+  /** Solo si el usuario tiene `movements.response_json` */
+  respuestaJson?: unknown
 }
 
 export type MovementsResponse = {

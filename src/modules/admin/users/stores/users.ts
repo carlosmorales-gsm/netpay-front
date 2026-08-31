@@ -4,6 +4,7 @@ import { useAuthStore } from '@/modules/auth/stores/auth'
 import { getApiErrorMessage } from '@/shared/utils/apiError'
 import { useUiStore } from '@/shared/stores/ui'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
+import { isProtectedAdmin } from '@/shared/utils/systemAdmin'
 import type { OdooUserLookup } from '@/shared/types/odooUser'
 import { usersApi } from '../api/users.api'
 import type { RoleOption, User, UserForm } from '../types'
@@ -79,6 +80,10 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   function openEdit(user: User) {
+    if (isProtectedAdmin(user)) {
+      useUiStore().error('El usuario administrador no se puede editar')
+      return
+    }
     editingId.value = user.id
     modalError.value = null
     error.value = null
@@ -130,6 +135,15 @@ export const useUsersStore = defineStore('users', () => {
     modalError.value = null
     error.value = null
 
+    if (editingId.value) {
+      const current = users.value.find((u) => u.id === editingId.value)
+      if (current && isProtectedAdmin(current)) {
+        modalError.value = 'El usuario administrador no se puede editar'
+        ui.error(modalError.value)
+        return
+      }
+    }
+
     const payload: Record<string, unknown> = {
       email: form.email.trim(),
       nombre: form.nombre.trim(),
@@ -167,6 +181,10 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   async function deactivate(user: User) {
+    if (isProtectedAdmin(user)) {
+      useUiStore().error('El usuario administrador no se puede desactivar')
+      return
+    }
     const ui = useUiStore()
     const ok = await ui.confirm({
       title: 'Desactivar usuario',

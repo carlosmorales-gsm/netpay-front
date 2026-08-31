@@ -9,6 +9,7 @@ export type Role = {
   id: number
   nombre: string
   descripcion: string | null
+  protegido?: boolean
   permissions: Permission[]
 }
 

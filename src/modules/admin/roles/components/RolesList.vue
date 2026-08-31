@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
+import { isProtectedAdmin } from '@/shared/utils/systemAdmin'
 import { useRolesStore } from '../stores/roles'
 
 const auth = useAuthStore()
@@ -29,8 +30,9 @@ const { roles, loading, error } = storeToRefs(store)
             <h2>{{ role.nombre }}</h2>
             <p>{{ role.descripcion || 'Sin descripción' }}</p>
           </div>
+          <span v-if="isProtectedAdmin(role)" class="badge badge-ok">Sistema</span>
           <button
-            v-if="auth.hasPermission('roles.manage')"
+            v-else-if="auth.hasPermission('roles.manage')"
             class="btn btn-ghost btn-sm"
             type="button"
             @click="store.openEdit(role)"

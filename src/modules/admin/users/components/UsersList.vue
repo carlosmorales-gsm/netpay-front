@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
+import { isProtectedAdmin } from '@/shared/utils/systemAdmin'
 import { useUsersStore } from '../stores/users'
 
 const auth = useAuthStore()
@@ -45,17 +46,20 @@ const { users, loading, error } = storeToRefs(store)
                 </span>
               </td>
               <td v-if="auth.hasPermission('users.manage')" class="actions">
-                <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(user)">
-                  Editar
-                </button>
-                <button
-                  v-if="user.activo"
-                  class="btn btn-danger btn-sm"
-                  type="button"
-                  @click="store.deactivate(user)"
-                >
-                  Desactivar
-                </button>
+                <span v-if="isProtectedAdmin(user)" class="badge badge-ok">Sistema</span>
+                <template v-else>
+                  <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(user)">
+                    Editar
+                  </button>
+                  <button
+                    v-if="user.activo"
+                    class="btn btn-danger btn-sm"
+                    type="button"
+                    @click="store.deactivate(user)"
+                  >
+                    Desactivar
+                  </button>
+                </template>
               </td>
             </tr>
           </tbody>
@@ -84,17 +88,20 @@ const { users, loading, error } = storeToRefs(store)
               </div>
             </div>
             <div v-if="auth.hasPermission('users.manage')" class="actions">
-              <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(user)">
-                Editar
-              </button>
-              <button
-                v-if="user.activo"
-                class="btn btn-danger btn-sm"
-                type="button"
-                @click="store.deactivate(user)"
-              >
-                Desactivar
-              </button>
+              <span v-if="isProtectedAdmin(user)" class="badge badge-ok">Sistema</span>
+              <template v-else>
+                <button class="btn btn-ghost btn-sm" type="button" @click="store.openEdit(user)">
+                  Editar
+                </button>
+                <button
+                  v-if="user.activo"
+                  class="btn btn-danger btn-sm"
+                  type="button"
+                  @click="store.deactivate(user)"
+                >
+                  Desactivar
+                </button>
+              </template>
             </div>
           </article>
         </div>

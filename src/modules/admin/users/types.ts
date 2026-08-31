@@ -10,6 +10,7 @@ export type User = {
   odooUserId: number | null
   roleId: number
   roleNombre: string | null
+  protegido?: boolean
   activo: boolean
 }
 

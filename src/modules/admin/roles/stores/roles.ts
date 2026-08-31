@@ -2,6 +2,7 @@ import { computed, reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
 import { groupBySection } from '@/shared/config/menuSections'
+import { isProtectedAdmin } from '@/shared/utils/systemAdmin'
 import { getApiErrorMessage } from '@/shared/utils/apiError'
 import { useUiStore } from '@/shared/stores/ui'
 import { downloadTablePdf } from '@/shared/utils/exportPdf'
@@ -54,6 +55,10 @@ export const useRolesStore = defineStore('roles', () => {
   }
 
   function openEdit(role: Role) {
+    if (isProtectedAdmin(role)) {
+      useUiStore().error('El rol Administrador no se puede editar')
+      return
+    }
     editing.value = role
     modalError.value = null
     form.nombre = role.nombre
@@ -119,6 +124,11 @@ export const useRolesStore = defineStore('roles', () => {
     const ui = useUiStore()
     modalError.value = null
     error.value = null
+    if (editing.value && isProtectedAdmin(editing.value)) {
+      modalError.value = 'El rol Administrador no se puede editar'
+      ui.error(modalError.value)
+      return
+    }
     if (!form.nombre.trim()) {
       modalError.value = 'El nombre del rol es obligatorio'
       ui.error(modalError.value)

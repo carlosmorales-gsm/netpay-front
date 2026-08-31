@@ -33,7 +33,7 @@ Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `r
 3. **Transversal** → `shared/` (nunca duplicar http/client, empresas, PDF, errores).
 4. **Auth** → `modules/auth/` (`stores/auth`, `api/auth.api`, `types`). Sesión con `pinia-plugin-persistedstate` en `localStorage` (`netpay.auth`).
 5. **UI**: listado y modal son componentes separados; la view solo orquesta.
-6. **Permisos**: menú y acciones con `auth.hasPermission('codigo')`. Códigos tipo `terminals.view`, `terminals.manage`.
+6. **Permisos**: menú y acciones con `auth.hasPermission('codigo')`. Códigos tipo `terminals.view`, `terminals.manage`. En movimientos, `movements.response_json` muestra el JSON de respuesta en el detalle. El rol/usuario **Administrador** es de sistema: no se edita ni se desactiva y siempre tiene todos los permisos.
 7. **Branding**: variables CSS existentes (`--primary`, `--secondary`, `--accent`, `--cream`). No inventar tema purple/IA genérico.
 8. **No** crear markdown de docs salvo que el usuario lo pida. Este `AGENTS.md` sí se mantiene actualizado si cambia la estructura.
 9. **No** commit/push sin petición explícita del usuario.
