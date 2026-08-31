@@ -20,7 +20,7 @@ const CRC_TABLE = (() => {
 function crc32(data: Uint8Array) {
   let c = 0xffffffff
   for (let i = 0; i < data.length; i++) {
-    c = CRC_TABLE[(c ^ data[i]) & 0xff] ^ (c >>> 8)
+    c = CRC_TABLE[(c ^ data[i]!) & 0xff]! ^ (c >>> 8)
   }
   return (c ^ 0xffffffff) >>> 0
 }
@@ -141,8 +141,8 @@ function safeSheetName(name: string) {
   return cleaned.slice(0, 31)
 }
 
-function textWidth(value: string, min: number, max: number) {
-  return Math.min(max, Math.max(min, Math.round(value.length * 1.15) + 2))
+function textWidth(length: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, Math.round(length * 1.15) + 2))
 }
 
 function inlineCell(ref: string, text: string, style: number) {
