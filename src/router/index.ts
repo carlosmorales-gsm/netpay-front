@@ -27,6 +27,12 @@ const router = createRouter({
       meta: { permission: 'refunds.view' },
     },
     {
+      path: '/reverses',
+      name: 'reverses',
+      component: () => import('@/modules/operacion/reverses/views/ReversesView.vue'),
+      meta: { permission: 'reverses.view' },
+    },
+    {
       path: '/movements',
       name: 'movements',
       component: () => import('@/modules/reportes/movements/views/MovementsView.vue'),
@@ -54,6 +60,7 @@ const router = createRouter({
 function firstAllowedRoute(auth: ReturnType<typeof useAuthStore>) {
   if (auth.hasPermission('terminals.view')) return '/terminals'
   if (auth.hasPermission('refunds.view')) return '/refunds'
+  if (auth.hasPermission('reverses.view')) return '/reverses'
   if (auth.hasPermission('movements.global')) return '/movements'
   if (auth.hasPermission('users.view')) return '/users'
   if (auth.hasPermission('roles.view')) return '/roles'

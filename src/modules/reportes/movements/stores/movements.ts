@@ -102,12 +102,13 @@ export const useMovementsStore = defineStore('movements', () => {
   }
 
   function canReprint(row: Movement) {
-    return (
-      row.estatus?.key === 'applied' ||
-      (row.aplicado &&
-        row.tipoRespuesta === '00' &&
-        row.tipoTransaccion === 1)
-    )
+    if (row.tipoTransaccion !== 1) return false
+    const key = row.estatus?.key || ''
+    if (key === 'refunded' || key === 'void') return false
+    if (key === 'possible_reverse' || key === 'pending_reverse' || key === 'reversed') {
+      return false
+    }
+    return Boolean(row.folioNumber || row.orderId)
   }
 
   async function reprintTicket(row: Movement) {
@@ -116,12 +117,13 @@ export const useMovementsStore = defineStore('movements', () => {
 
     const ok = await ui.confirm({
       title: 'Reimprimir ticket',
-      message:
-        `Se enviará la reimpresión a la terminal NetPay.\n` +
-        `Folio: ${row.folioVenta}\n` +
-        `Order: ${row.orderId || '—'}\n` +
-        `Importe: ${money(row.importe)}\n\n` +
-        'La terminal debe estar encendida y en pantalla principal. ¿Continuar?',
+      message: 'Se enviará la reimpresión a la terminal NetPay. La terminal debe estar encendida y en pantalla principal.',
+      details: [
+        { label: 'Folio de venta', value: row.folioVenta },
+        { label: 'folioNumber', value: row.folioNumber || '—' },
+        { label: 'Order', value: row.orderId || '—' },
+        { label: 'Importe', value: money(row.importe) },
+      ],
       confirmText: 'Reimprimir',
       cancelText: 'Cancelar',
     })
@@ -130,8 +132,9 @@ export const useMovementsStore = defineStore('movements', () => {
     reprintingId.value = row.id
     try {
       await ui.withLoading(async () => {
-        await movementsApi.reprint(row.id)
-        ui.success('Reimpresión enviada a la terminal')
+        const res = await movementsApi.reprint(row.id)
+        await fetchList()
+        ui.success(res.data?.message || 'Reimpresión enviada a la terminal')
       })
     } catch (err) {
       ui.error(getApiErrorMessage(err, 'No se pudo reimprimir el ticket'))
@@ -173,7 +176,8 @@ export const useMovementsStore = defineStore('movements', () => {
       columns: [
         { header: 'Fecha', key: 'fecha', width: 20 },
         { header: 'Tipo', key: 'tipo', width: 16 },
-        { header: 'Folio', key: 'folio', width: 14 },
+        { header: 'Folio de venta', key: 'folio', width: 18 },
+        { header: 'folioNumber', key: 'folioNumber', width: 22 },
         { header: 'Order', key: 'orderId', width: 28 },
         { header: 'Usuario', key: 'usuario', width: 22 },
         { header: 'Terminal', key: 'terminal', width: 16 },
@@ -185,10 +189,11 @@ export const useMovementsStore = defineStore('movements', () => {
         fecha: formatLocalDateTime(row.fechaTransacciones),
         tipo: row.tipoTransaccionDesc || '—',
         folio: row.folioVenta,
+        folioNumber: row.folioNumber || '—',
         orderId: row.orderId || '—',
         usuario: row.usuarioNombre || `ID ${row.usuarioId}`,
         terminal: row.folioTerminal || row.storeId || '—',
-        empresa: empresas.nombre(row.companyId),
+        empresa: row.empresaNombre || empresas.nombre(row.companyId),
         importe: Number(row.importe) || 0,
         estatus: row.estatus?.label || (row.aplicado ? 'Aplicado' : row.tipoRespuesta || '—'),
       })),

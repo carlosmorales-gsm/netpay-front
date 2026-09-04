@@ -7,6 +7,8 @@ export type Movement = {
   tipoRespuesta: string | null
   tarjeta: string | null
   folioVenta: string
+  /** FolioNumber enviado a NetPay (consulta/reimpresión Smart Accounts) */
+  folioNumber: string | null
   orderId: string | null
   tipoTransaccion: number | null
   tipoTransaccionDesc: string | null
@@ -14,6 +16,7 @@ export type Movement = {
   storeId: string | null
   folioTerminal: string | null
   companyId: number | null
+  empresaNombre?: string | null
   estatus?: {
     key: string
     label: string
@@ -24,6 +27,14 @@ export type Movement = {
   }
   /** Solo si el usuario tiene `movements.response_json` */
   respuestaJson?: unknown
+}
+
+export type ReprintResult = {
+  success?: boolean
+  status?: string
+  message?: string
+  reprintModule?: string
+  transactionId?: number
 }
 
 export type MovementsResponse = {

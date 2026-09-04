@@ -19,9 +19,11 @@ export const useEmpresasStore = defineStore('empresas', () => {
     }
   }
 
-  function nombre(id: number | null | undefined) {
-    if (id == null) return '—'
-    return items.value.find((e) => e.id === id)?.nombre ?? String(id)
+  function nombre(id: number | string | null | undefined) {
+    if (id == null || id === '') return '—'
+    const num = Number(id)
+    if (!Number.isFinite(num)) return '—'
+    return items.value.find((e) => Number(e.id) === num)?.nombre ?? '—'
   }
 
   return { items, loaded, fetchAll, nombre }

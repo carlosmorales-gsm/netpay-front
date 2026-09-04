@@ -31,6 +31,12 @@ const menuByScreen: Record<string, Omit<MenuItem, 'pantalla'>> = {
     hint: 'Cancelar cobros aplicados',
     permission: 'refunds.view',
   },
+  reverses: {
+    to: '/reverses',
+    label: 'Reversos',
+    hint: 'Consulta por folio RV / PRV',
+    permission: 'reverses.view',
+  },
   movements: {
     to: '/movements',
     label: 'Movimientos',

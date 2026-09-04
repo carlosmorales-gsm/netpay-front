@@ -96,8 +96,7 @@ export const useRefundsStore = defineStore('refunds', () => {
         { label: 'Order', value: row.orderId || '—' },
         { label: 'Folio', value: row.folioVenta },
       ],
-      hint:
-        'Solo cobros de hoy, hasta las 20:00 (hora de Ciudad de México). Al terminar se reimprimirá el ticket.',
+      hint: 'Solo cobros de hoy, hasta las 20:00 (hora de Ciudad de México).',
       confirmText: 'Devolver',
       cancelText: 'Cancelar',
       danger: true,
@@ -111,24 +110,7 @@ export const useRefundsStore = defineStore('refunds', () => {
         if (!res.data.success) {
           throw new Error(res.data.message || 'La devolución no procedió')
         }
-
-        // Tras devolución desde el front: también reimprimir ticket en terminal.
-        try {
-          await movementsApi.reprint(row.id)
-          ui.success(
-            (res.data.message || 'Devolución exitosa en terminal') +
-              '. Reimpresión enviada a la terminal.',
-          )
-        } catch (reprintErr) {
-          ui.success(res.data.message || 'Devolución exitosa en terminal')
-          ui.error(
-            getApiErrorMessage(
-              reprintErr,
-              'La devolución se completó, pero no se pudo reimprimir el ticket',
-            ),
-          )
-        }
-
+        ui.success(res.data.message || 'Devolución exitosa en terminal')
         await fetchList()
       })
     } catch (err) {

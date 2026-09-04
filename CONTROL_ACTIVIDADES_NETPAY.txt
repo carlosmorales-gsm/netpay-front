@@ -2,7 +2,7 @@
   CONTROL DE ACTIVIDADES — PROYECTO NETPAY (San Martín)
 ================================================================================
   Componentes: netpay-front | api-netpay | Odoo (sale_extensions)
-  Actualizado: 28/08/2026
+  Actualizado: 03/09/2026
 ================================================================================
 
 
@@ -58,21 +58,34 @@
   - Documento de control de actividades.
 
 
+03/09/2026
+  - Certificación reversos (18 / 20.1 / 21 / 21.2–21.4): el reverso lo hace la Pax; el panel no aplica pago y confirma con consulta por folio.
+  - Consulta por folio alineada a docs NetPay: folioId = folioNumber de la venta, orderId vacío, isSmartAccounts true; estatus solo por reprintModule (C / V / D / RV / PRV).
+  - folioNumber único en la venta (raíz del JSON a NetPay) y persistido en traceability para poder consultar aunque no haya callback.
+  - Movimientos: Reimprimir ticket en cobros aplicados; badges Posible reverso, Pendiente de reverso, Reversada (la consulta de reverso ya no vive aquí).
+  - Pantalla Reversos (Operación): listado de posible / PRV / RV y Consultar por folio (`GET /admin/reverses`, `POST /admin/reverses/:id/consult`).
+  - Listado compacto sin scroll horizontal: Folio de venta, folioNumber, orderId, Usuario, Terminal y Empresa (nombre, no id).
+  - JSON de respuesta = body NetPay de POST /transactions/terminal-response (log payload); no el log odoo_finalize.
+  - ACK webhook Recibido; lock de terminal por serial; se quitó la auto-reimpresión (solo bajo demanda).
+  - Permiso movements.response_json; rol/usuario Administrador de sistema (no se edita ni desactiva).
+
+
 ================================================================================
-  ESTADO GENERAL (28/08/2026)
+  ESTADO GENERAL (03/09/2026)
 ================================================================================
 
   COMPLETADO
-    - Panel admin: terminales, movimientos, devoluciones, usuarios, roles.
+    - Panel admin: terminales, movimientos, devoluciones, reversos, usuarios, roles.
     - Cobro con terminal desde Odoo integrado con NetPay Smart Accounts.
-    - Devoluciones, reimpresión de tickets y registro de pagos en Odoo.
-    - Seguridad: JWT (panel), API Key (Odoo), permisos por pantalla.
-    - Certificación: cuestionario documentado.
+    - Devoluciones, reimpresión/consulta por folio y registro de pagos en Odoo.
+    - Reverso: pantalla Operación → Reversos (consulta RV/PRV por folio; Movimientos solo reimprime cobros aplicados).
+    - JSON de terminal NetPay en detalle de movimientos.
+    - Seguridad: JWT (panel), API Key (Odoo), permisos por pantalla, Administrador protegido.
+    - Certificación: cuestionario documentado; lock por serial; ACK Recibido.
 
   PENDIENTE
     - Módulo de logs para administrador.
-    - Mostrar tipo de tarjeta en movimientos del panel.
-    - Gaps de certificación: timeout 180s, token periódico, flujo Print-Ticket en devoluciones, lock por terminal.
+    - Gaps de certificación restantes: token periódico, flujo Print-Ticket en devoluciones, ticket personalizado.
     - Actualizar módulo sale_extensions en instancias Odoo.
 
 

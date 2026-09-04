@@ -20,6 +20,7 @@ export const MENU_SECTIONS: MenuSectionDef[] = [
 export const SCREENS: ScreenMeta[] = [
   { key: 'terminals', label: 'Terminales', sectionId: 'operacion' },
   { key: 'refunds', label: 'Devoluciones', sectionId: 'operacion' },
+  { key: 'reverses', label: 'Reversos', sectionId: 'operacion' },
   { key: 'movements', label: 'Movimientos', sectionId: 'reportes' },
   { key: 'users', label: 'Usuarios', sectionId: 'admin' },
   { key: 'roles', label: 'Roles', sectionId: 'admin' },

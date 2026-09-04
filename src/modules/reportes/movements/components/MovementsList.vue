@@ -19,6 +19,9 @@ function toggleDetail(id: number) {
 function estatusClass(key?: string) {
   if (key === 'applied') return 'badge-ok'
   if (key === 'approved') return 'badge-warn'
+  if (key === 'reversed') return 'badge-reversed'
+  if (key === 'pending_reverse') return 'badge-prv'
+  if (key === 'possible_reverse') return 'badge-reverse'
   if (key === 'refunded' || key === 'void') return 'badge-refunded'
   if (key === 'cancelled') return 'badge-off'
   if (key === 'declined') return 'badge-off'
@@ -38,9 +41,8 @@ function typeLabel(row: { tipoTransaccion?: number | null; tipoTransaccionDesc?:
   return row.tipoTransaccionDesc || '—'
 }
 
-function shortCompany(name: string) {
-  if (name.length <= 28) return name
-  return `${name.slice(0, 26)}…`
+function empresaNombre(row: { empresaNombre?: string | null; companyId: number | null }) {
+  return row.empresaNombre || empresas.nombre(row.companyId)
 }
 </script>
 
@@ -121,11 +123,8 @@ function shortCompany(name: string) {
               <th class="col-toggle"></th>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Folio</th>
-              <th>Order</th>
-              <th>Usuario</th>
-              <th>Terminal</th>
-              <th>Empresa</th>
+              <th>Folio de venta / folioNumber / orderId</th>
+              <th>Usuario / Terminal / Empresa</th>
               <th class="col-amount">Importe</th>
               <th>Estatus</th>
             </tr>
@@ -159,19 +158,28 @@ function shortCompany(name: string) {
                   {{ typeLabel(row) }}
                 </span>
               </td>
-              <td class="mono">{{ row.folioVenta }}</td>
-              <td>
-                <span class="order" :title="row.orderId || ''">{{ row.orderId || '—' }}</span>
-              </td>
-              <td>{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</td>
-              <td class="mono">{{ row.folioTerminal || row.storeId || '—' }}</td>
-              <td>
-                <span :title="empresas.nombre(row.companyId)">
-                  {{ shortCompany(empresas.nombre(row.companyId)) }}
+              <td class="col-folios">
+                <span class="id-label">Folio de venta</span>
+                <span class="folio-sale">{{ row.folioVenta }}</span>
+                <span class="id-label">folioNumber</span>
+                <span class="folio-np" :title="row.folioNumber || ''">
+                  {{ row.folioNumber || '—' }}
+                </span>
+                <span class="id-label">orderId</span>
+                <span class="folio-np" :title="row.orderId || ''">
+                  {{ row.orderId || '—' }}
                 </span>
               </td>
+              <td class="col-who">
+                <span class="id-label">Usuario</span>
+                <span class="folio-sale">{{ row.usuarioNombre || `ID ${row.usuarioId}` }}</span>
+                <span class="id-label">Terminal</span>
+                <span class="folio-np">{{ row.folioTerminal || row.storeId || '—' }}</span>
+                <span class="id-label">Empresa</span>
+                <span class="folio-np">{{ empresaNombre(row) }}</span>
+              </td>
               <td class="col-amount">{{ store.money(row.importe) }}</td>
-              <td>
+              <td class="col-estatus">
                 <span class="badge" :class="estatusClass(row.estatus?.key)">
                   {{
                     row.estatus?.label ||
@@ -181,7 +189,7 @@ function shortCompany(name: string) {
               </td>
             </tr>
             <tr v-if="expandedId === row.id" class="row-detail">
-              <td colspan="10">
+              <td colspan="7">
                 <MovementDetailPanel :row="row" />
               </td>
             </tr>
@@ -213,12 +221,16 @@ function shortCompany(name: string) {
                 <b>{{ typeLabel(row) }}</b>
               </div>
               <div class="row">
-                <span>Folio</span>
+                <span>Folio de venta</span>
                 <b>{{ row.folioVenta }}</b>
               </div>
               <div class="row">
+                <span>folioNumber</span>
+                <b class="folio-np">{{ row.folioNumber || '—' }}</b>
+              </div>
+              <div class="row">
                 <span>Order</span>
-                <b class="order">{{ row.orderId || '—' }}</b>
+                <b>{{ row.orderId || '—' }}</b>
               </div>
               <div class="row">
                 <span>Usuario</span>
@@ -230,7 +242,7 @@ function shortCompany(name: string) {
               </div>
               <div class="row">
                 <span>Empresa</span>
-                <b>{{ empresas.nombre(row.companyId) }}</b>
+                <b>{{ empresaNombre(row) }}</b>
               </div>
             </div>
             <button
@@ -314,11 +326,68 @@ function shortCompany(name: string) {
 }
 
 .table-wrap {
-  padding: 0.2rem 0.35rem 0.6rem;
+  padding: 0.2rem 0.5rem 0.6rem;
+  overflow-x: hidden;
 }
 
 .movements-table {
-  min-width: 1120px;
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+.movements-table th,
+.movements-table td {
+  max-width: none;
+  padding: 0.7rem 0.7rem;
+}
+
+.col-folios {
+  min-width: 0;
+  width: 32%;
+}
+
+.folio-sale,
+.folio-np {
+  display: block;
+  line-height: 1.3;
+}
+
+.id-label {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.id-label:first-child {
+  margin-top: 0;
+}
+
+.folio-sale {
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.folio-np {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.col-who {
+  min-width: 0;
+  width: 28%;
+}
+
+.col-estatus {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .col-toggle {
@@ -403,21 +472,17 @@ function shortCompany(name: string) {
   letter-spacing: 0.01em;
 }
 
-.order {
-  display: inline-block;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
 .col-amount {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   white-space: nowrap;
+  width: 1%;
+}
+
+.data-card .folio-np {
+  white-space: normal;
+  word-break: break-all;
 }
 
 .badge-warn {
@@ -428,6 +493,21 @@ function shortCompany(name: string) {
 .badge-refunded {
   background: rgba(70, 110, 160, 0.16);
   color: #2f4f7a;
+}
+
+.badge-reverse {
+  background: rgba(204, 160, 121, 0.28);
+  color: #8a5a2b;
+}
+
+.badge-prv {
+  background: rgba(180, 120, 40, 0.18);
+  color: #7a4a12;
+}
+
+.badge-reversed {
+  background: rgba(53, 100, 125, 0.16);
+  color: var(--secondary);
 }
 
 @media (max-width: 860px) {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
 import { useUiStore } from '@/shared/stores/ui'
 import { copyText } from '@/shared/utils/copyText'
+import { useMovementsStore } from '../stores/movements'
 import type { Movement } from '../types'
 
 const props = defineProps<{
@@ -11,8 +13,11 @@ const props = defineProps<{
 
 const auth = useAuthStore()
 const ui = useUiStore()
+const store = useMovementsStore()
+const { reprintingId } = storeToRefs(store)
 
 const canSeeJson = computed(() => auth.hasPermission('movements.response_json'))
+const showReprint = computed(() => store.canReprint(props.row))
 
 function prettyJson(value: unknown) {
   if (value == null || value === '') return ''
@@ -42,6 +47,12 @@ async function copyJson() {
 
 <template>
   <div class="detail">
+    <div v-if="showReprint" class="detail-actions">
+      <button class="btn btn-primary btn-sm" type="button" :disabled="reprintingId === row.id"
+        @click.stop="store.reprintTicket(row)">
+        Reimprimir ticket
+      </button>
+    </div>
     <p class="detail-summary">{{ row.detalle?.resumen || 'Sin detalle de respuesta' }}</p>
     <dl class="detail-grid">
       <div v-for="campo in row.detalle?.campos || []" :key="campo.label" class="detail-item">
@@ -53,12 +64,7 @@ async function copyJson() {
     <div v-if="canSeeJson" class="json-block">
       <div class="json-head">
         <span>JSON de respuesta</span>
-        <button
-          v-if="jsonText"
-          class="btn btn-ghost btn-sm"
-          type="button"
-          @click.stop="copyJson"
-        >
+        <button v-if="jsonText" class="btn btn-ghost btn-sm" type="button" @click.stop="copyJson">
           Copiar
         </button>
       </div>
@@ -69,6 +75,12 @@ async function copyJson() {
 </template>
 
 <style scoped>
+.detail-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
 .detail-summary {
   margin: 0 0 0.85rem;
   font-weight: 600;
@@ -120,13 +132,14 @@ async function copyJson() {
 .json-block pre {
   margin: 0;
   padding: 0.75rem 0.85rem;
-  max-height: 320px;
+  max-height: min(70vh, 640px);
   overflow: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.78rem;
   line-height: 1.45;
   color: var(--ink);
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .json-empty {

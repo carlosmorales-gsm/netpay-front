@@ -17,6 +17,8 @@ function resolveHome() {
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
   if (redirect && redirect !== '/login') return redirect
   if (auth.hasPermission('terminals.view')) return '/terminals'
+  if (auth.hasPermission('refunds.view')) return '/refunds'
+  if (auth.hasPermission('reverses.view')) return '/reverses'
   if (auth.hasPermission('movements.own')) return '/movements'
   if (auth.hasPermission('users.view')) return '/users'
   if (auth.hasPermission('roles.view')) return '/roles'

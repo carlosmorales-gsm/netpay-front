@@ -24,7 +24,7 @@ src/
   router/ App.vue main.ts assets/
 ```
 
-Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `refunds` (Devoluciones), `movements`, `users`, `roles`.
+Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `refunds` (Devoluciones), `reverses` (Reversos), `movements`, `users`, `roles`.
 
 ## Reglas al agregar o cambiar código
 
@@ -54,8 +54,9 @@ Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `r
 | Cliente axios / refresh | `shared/api/http.ts` |
 | Toasts / confirm / loading | `shared/stores/ui.ts` + `shared/components/App*` — **no usar** `alert()` ni `confirm()` nativos |
 | Buscar usuario Odoo | Front → `/admin/terminals/odoo-users/:ref` o `/admin/users/odoo/:ref` → api-netpay → api-odoo-gsm `GET /users/:ref` |
-| Devoluciones / cancel NetPay | `modules/operacion/refunds/` → `GET /admin/refunds`, `POST /admin/refunds/:id/void` (Smart Accounts `isSmartAccounts`). Tras void exitoso desde el front, también llama `POST /admin/movements/:id/reprint`. |
-| Reimprimir ticket | Movimientos (aplicados) → `POST /admin/movements/:id/reprint` → NetPay reprint Smart Accounts (`folioId`). También se dispara automáticamente después de una devolución desde el front. |
+| Devoluciones / cancel NetPay | `modules/operacion/refunds/` → `GET /admin/refunds`, `POST /admin/refunds/:id/void` (Smart Accounts `isSmartAccounts`). |
+| Reversos / consultar folio | `modules/operacion/reverses/` → `GET /admin/reverses`, `POST /admin/reverses/:id/consult`. Confirma RV/PRV por folioNumber; no cobra. Permisos `reverses.view` / `reverses.manage`. |
+| Reimprimir ticket | Movimientos → `POST /admin/movements/:id/reprint` (cobros aplicados). El estatus de reverso se lee en `reprintModule` (`C`/`V`/`D`/`RV`/`PRV`), no en `responseCode`. Solo bajo demanda. |
 
 Backend relacionado: `api-netpay` usa `API_ODOO` (debe apuntar a api-odoo-gsm, ej. `http://localhost:3006/`).
 
