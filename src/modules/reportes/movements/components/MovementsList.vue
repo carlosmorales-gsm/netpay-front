@@ -41,6 +41,10 @@ function typeLabel(row: { tipoTransaccion?: number | null; tipoTransaccionDesc?:
   return row.tipoTransaccionDesc || '—'
 }
 
+function isReprint(row: { tipoTransaccion?: number | null }) {
+  return row.tipoTransaccion === 3
+}
+
 function empresaNombre(row: { empresaNombre?: string | null; companyId: number | null }) {
   return row.empresaNombre || empresas.nombre(row.companyId)
 }
@@ -180,7 +184,11 @@ function empresaNombre(row: { empresaNombre?: string | null; companyId: number |
               </td>
               <td class="col-amount">{{ store.money(row.importe) }}</td>
               <td class="col-estatus">
-                <span class="badge" :class="estatusClass(row.estatus?.key)">
+                <span
+                  v-if="!isReprint(row)"
+                  class="badge"
+                  :class="estatusClass(row.estatus?.key)"
+                >
                   {{
                     row.estatus?.label ||
                     (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
@@ -201,7 +209,11 @@ function empresaNombre(row: { empresaNombre?: string | null; companyId: number |
           <article v-for="row in data.items" :key="`card-${row.id}`" class="data-card">
             <div class="data-card-head">
               <strong>{{ store.money(row.importe) }}</strong>
-              <span class="badge" :class="estatusClass(row.estatus?.key)">
+              <span
+                v-if="!isReprint(row)"
+                class="badge"
+                :class="estatusClass(row.estatus?.key)"
+              >
                 {{
                   row.estatus?.label ||
                   (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
