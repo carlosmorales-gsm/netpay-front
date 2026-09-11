@@ -217,11 +217,11 @@
 --------------------------------------------------------------------------------
 
 [19/08/2026] Consultoría — Especificaciones no cumplidas (identificadas)
-  1. Timeout de espera terminal 180s (actual ~120-130s).
-  2. Renovación periódica del token OAuth NetPay.
-  3. Flujo devoluciones Print-Ticket + orderId largo (vs void directo actual).
-  4. Lock anti multi-instancia por terminal física (storeId + serie).
-  5. Ticket personalizado / campos adicionales en comprobante.
+  1. Timeout de espera terminal 180s (actual ~120-130s).          → CERRADO 03/09 (wait 180_000 ms)
+  2. Renovación periódica del token OAuth NetPay.                  → SIGUE PENDIENTE
+  3. Flujo devoluciones Print-Ticket + orderId largo.              → SIGUE PENDIENTE
+  4. Lock anti multi-instancia por terminal física (storeId + serie). → CERRADO 03/09 (terminal_locks)
+  5. Ticket personalizado / campos adicionales en comprobante.     → SIGUE PENDIENTE
 
 [19/08/2026] Consultoría — Lock multi-instancia
   - Explicación: prevenir 2 cobros simultáneos en la misma terminal física.
@@ -268,32 +268,57 @@
   - CONTROL_ACTIVIDADES_NETPAY_DETALLE.txt (este documento).
 
 
+--------------------------------------------------------------------------------
+03–11/09/2026 — Pendientes cerrados (certificación reversos / folio / lock)
+--------------------------------------------------------------------------------
+
+[03/09/2026] api-netpay — Timeout 180 s y lock de terminal
+  - Espera de cobro/cancelación 180_000 ms (gap 19/08 #1).
+  - terminal_locks: una operación a la vez por serial (cobro, void, reprint). Mensaje "Terminal en uso".
+
+[03/09/2026] netpay-front + api-netpay — Reversos y consulta por folio
+  - Pantalla Operación → Reversos (permisos reverses.view / reverses.manage).
+  - Consultar por folio: folioId = folioNumber, orderId vacío, reprintModule C/V/D/RV/PRV.
+  - Movimientos: solo reimprimir cobros aplicados; sin consulta de reverso.
+
+[04/09/2026] api-netpay — Payload NetPay y prioridad de reprint
+  - successPaymentDto: campos ausentes → vacío; se guarda en log_transacciones.payload.
+  - Reprint: si hay folioId se manda orderId "".
+
+[07/09/2026] netpay-front — Movimientos
+  - Filas tipo Reimpresión sin badge de estatus.
+
+[10/09/2026] Certificación — Cuestionario IDs 31, 32 y 59
+  - Respuestas alineadas a reverso por folio, campos en BD y multi-instancia.
+
+
 ================================================================================
-  RESUMEN POR COMPONENTE (estado al 28/08/2026)
+  RESUMEN POR COMPONENTE (estado al 11/09/2026)
 ================================================================================
 
 NETPAY-FRONT (Panel admin)
   [OK] Login JWT + sesión persistente + credenciales dev
   [OK] Terminales CRUD + test $0.10 + búsqueda usuario Odoo
-  [OK] Movimientos globales + filtros + PDF + reimprimir ticket
-  [OK] Devoluciones Smart Accounts + reprint post-void
+  [OK] Movimientos globales + filtros + PDF + reimprimir ticket (sin estatus en tipo Reimpresión)
+  [OK] Devoluciones Smart Accounts
+  [OK] Reversos: consulta RV/PRV por folio
   [OK] Usuarios y Roles con permisos por sección
   [OK] UI responsive PC/tablet/móvil + branding GSM
   [OK] AGENTS.md guía de estructura
   [PEND] Módulo logs admin (filtros usuario/venta/keyword)
-  [PEND] Mostrar tipo tarjeta (débito/crédito) en listado movimientos
 
 API-NETPAY (NestJS)
   [OK] Auth admin JWT + refresh + permisos
   [OK] CRUD terminales, usuarios, roles, empresas
   [OK] Cobro terminal wait + finalize + void wait Smart Accounts
-  [OK] Reprint ticket + auto-reprint 3s post-pago Odoo
+  [OK] Reprint por folio (folioId + orderId vacío) / fallback orderId
   [OK] ApiKeyGuard para llamadas Odoo
   [OK] cardType/cardTypeName en wait y traceability
   [OK] Refunds list/void con reglas NetPay (mismo día, 20:00 CDMX)
+  [OK] Timeout 180s certificación
+  [OK] Lock por terminal física (multi-instancia)
+  [OK] ACK webhook Recibido; DTO callback NetPay con vacíos por default
   [PEND] GET /admin/logs con permiso logs.view
-  [PEND] Timeout 180s certificación
-  [PEND] Lock por terminal física (multi-instancia)
   [PEND] Flujo Print-Ticket para devoluciones certificación
 
 ODOO (sale_extensions)
@@ -307,9 +332,9 @@ ODOO (sale_extensions)
   [PEND] Actualizar módulo en instancias (-u sale_extensions)
 
 CERTIFICACIÓN NETPAY v4.4.1
-  [OK] Cuestionario respondido (Excel + script Python)
-  [GAP] Timeout 180s, token periódico, Print-Ticket devoluciones
-  [GAP] Lock multi-instancia, ticket personalizado
+  [OK] Cuestionario respondido (Excel + script Python); IDs 31 / 32 / 59 actualizados
+  [OK] Timeout 180s, lock multi-instancia, ACK Recibido, consulta reverso por folio
+  [GAP] Token periódico, Print-Ticket devoluciones, ticket personalizado
 
 
 ================================================================================

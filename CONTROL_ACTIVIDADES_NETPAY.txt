@@ -2,7 +2,7 @@
   CONTROL DE ACTIVIDADES — PROYECTO NETPAY (San Martín)
 ================================================================================
   Componentes: netpay-front | api-netpay | Odoo (sale_extensions)
-  Actualizado: 03/09/2026
+  Actualizado: 11/09/2026
 ================================================================================
 
 
@@ -68,10 +68,27 @@
   - JSON de respuesta = body NetPay de POST /transactions/terminal-response (log payload); no el log odoo_finalize.
   - ACK webhook Recibido; lock de terminal por serial; se quitó la auto-reimpresión (solo bajo demanda).
   - Permiso movements.response_json; rol/usuario Administrador de sistema (no se edita ni desactiva).
+  - Timeout de espera de terminal a 180 s (gap 19/08).
+  - Lock anti multi-instancia por serial de la Pax (gap 19/08): cobro, cancelación y reimpresión exclusivos.
+
+
+04/09/2026
+  - Pantalla Reversos operativa: consulta por folio fuera de Movimientos.
+  - Mensaje de terminal ocupada: "Terminal en uso".
+  - Callback NetPay normalizado con successPaymentDto; campos ausentes quedan vacíos ('' / 0 / false) y se persisten en el log.
+  - Reimpresión: prioridad folioId (folioNumber de la venta) y orderId vacío; si no hay folio, se usa orderId.
+
+
+07/09/2026
+  - Movimientos: en tipo Reimpresión no se muestra el badge de estatus (tabla y cards).
+
+
+10/09/2026
+  - Cuestionario certificación (IDs 31, 32 y 59): respuestas alineadas a reverso por folio, campos en BD y lock multi-instancia.
 
 
 ================================================================================
-  ESTADO GENERAL (03/09/2026)
+  ESTADO GENERAL (11/09/2026)
 ================================================================================
 
   COMPLETADO
@@ -79,13 +96,14 @@
     - Cobro con terminal desde Odoo integrado con NetPay Smart Accounts.
     - Devoluciones, reimpresión/consulta por folio y registro de pagos en Odoo.
     - Reverso: pantalla Operación → Reversos (consulta RV/PRV por folio; Movimientos solo reimprime cobros aplicados).
-    - JSON de terminal NetPay en detalle de movimientos.
+    - JSON de terminal NetPay en detalle (DTO successPaymentDto, vacíos por default).
     - Seguridad: JWT (panel), API Key (Odoo), permisos por pantalla, Administrador protegido.
-    - Certificación: cuestionario documentado; lock por serial; ACK Recibido.
+    - Certificación: cuestionario actualizado (31 / 32 / 59); lock por serial; ACK Recibido; timeout 180 s.
+    - Multi-instancia: una operación a la vez por terminal; botón de fila en curso deshabilitado.
 
   PENDIENTE
     - Módulo de logs para administrador.
-    - Gaps de certificación restantes: token periódico, flujo Print-Ticket en devoluciones, ticket personalizado.
+    - Gaps de certificación restantes: token OAuth periódico, flujo Print-Ticket en devoluciones, ticket personalizado.
     - Actualizar módulo sale_extensions en instancias Odoo.
 
 
