@@ -32,7 +32,7 @@
 
 [03/08/2026] api-netpay — Backend admin (implementación completa)
   - Esquema DB: admin_users, roles, permissions, role_permissions, empresas.
-  - Seed automático: usuario admin (admin@sanmartin.com.mx / AdminSM2026!).
+  - Seed automático: usuario admin (admin@sanmartin.com.mx; contraseña fuera del repo).
   - Permisos por pantalla: users, roles, terminals, movements, refunds.
   - Auth JWT: login, refresh token, /auth/me, guards de permisos.
   - Exclusión de JWT en rutas /bill/* y terminal-response (webhooks NetPay).
@@ -353,7 +353,7 @@ CERTIFICACIÓN NETPAY v4.4.1
   CREDENCIALES DEV (referencia)
 ================================================================================
 
-  Panel NetPay:  admin@sanmartin.com.mx / AdminSM2026!
+  Panel NetPay:  admin@sanmartin.com.mx (contraseña fuera del repo)
   API local:     http://localhost:3017
   Odoo API key:  sale_extensions.netpay_api_key (parámetro sistema)
 
