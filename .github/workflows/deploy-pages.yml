@@ -19,6 +19,7 @@ jobs:
       # develop -> staging (netpay-plataforma-stg.gsanmartin.net), main -> producción (netpay-plataforma.gsanmartin.net)
       PAGES_PROJECT: ${{ github.ref_name == 'main' && 'netpay-plataforma' || 'netpay-plataforma-stg' }}
       VITE_API_URL: ${{ github.ref_name == 'main' && 'https://api-netpay.gsanmartin.net' || 'https://api-netpay-stg.gsanmartin.net' }}
+      VITE_API_KEY: ${{ github.ref_name == 'main' && secrets.VITE_API_KEY || secrets.VITE_API_KEY_STG }}
     steps:
       - uses: actions/checkout@v7
 

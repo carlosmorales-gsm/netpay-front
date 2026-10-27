@@ -1,4 +1,4 @@
-import { http } from '@/shared/api/http'
+import { API_KEY, http } from '@/shared/api/http'
 import type {
   ApplyPaymentResult,
   MovementUserOption,
@@ -17,9 +17,8 @@ export const movementsApi = {
     return http.post<ReprintResult>(`/admin/movements/${id}/reprint`)
   },
   applyPayment(id: number) {
-    const apiKey = String(import.meta.env.VITE_API_KEY || '').trim()
     return http.post<ApplyPaymentResult>(`/admin/movements/${id}/apply`, undefined, {
-      headers: { 'X-Api-Key': apiKey },
+      headers: { 'X-Api-Key': API_KEY },
     })
   },
 }

@@ -7,6 +7,8 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3017'
 
+export const API_KEY = String(import.meta.env.VITE_API_KEY || '').trim()
+
 export const http = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },

@@ -6,7 +6,7 @@ Guía para trabajar en este repo (humano o agente). Vue 3 + Vite + Pinia + Vue R
 
 - Dev: `npm run dev` (no lo inicies si el usuario no lo pide)
 - Type-check: `npm run type-check`
-- API local: `VITE_API_URL` (por defecto `http://localhost:3017`)
+- API local: `VITE_API_URL` (por defecto `http://localhost:3017`). `VITE_API_KEY` se inyecta igual: `.env` en local, `ARG` en Docker y secret en el build de Pages (`VITE_API_KEY` en main, `VITE_API_KEY_STG` en develop).
 
 ## Estructura obligatoria
 
