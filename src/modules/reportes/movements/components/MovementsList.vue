@@ -184,16 +184,23 @@ function empresaNombre(row: { empresaNombre?: string | null; companyId: number |
               </td>
               <td class="col-amount">{{ store.money(row.importe) }}</td>
               <td class="col-estatus">
-                <span
-                  v-if="!isReprint(row)"
-                  class="badge"
-                  :class="estatusClass(row.estatus?.key)"
-                >
-                  {{
-                    row.estatus?.label ||
-                    (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
-                  }}
-                </span>
+                <div v-if="!isReprint(row)" class="estatus-cell">
+                  <span class="badge" :class="estatusClass(row.estatus?.key)">
+                    {{
+                      row.estatus?.label ||
+                      (row.aplicado ? 'Aplicado' : row.tipoRespuesta || 'Sin respuesta')
+                    }}
+                  </span>
+                  <button
+                    v-if="store.canApplyPayment(row)"
+                    class="btn btn-primary btn-sm"
+                    type="button"
+                    :disabled="store.applyingId === row.id"
+                    @click.stop="store.applyPayment(row)"
+                  >
+                    Aplicar pago
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="expandedId === row.id" class="row-detail">
@@ -220,6 +227,15 @@ function empresaNombre(row: { empresaNombre?: string | null; companyId: number |
                 }}
               </span>
             </div>
+            <button
+              v-if="store.canApplyPayment(row)"
+              class="btn btn-primary btn-sm apply-card-btn"
+              type="button"
+              :disabled="store.applyingId === row.id"
+              @click.stop="store.applyPayment(row)"
+            >
+              Aplicar pago
+            </button>
             <div class="data-card-meta">
               <div class="row">
                 <span>Fecha</span>
@@ -400,6 +416,18 @@ function empresaNombre(row: { empresaNombre?: string | null; companyId: number |
 .col-estatus {
   width: 1%;
   white-space: nowrap;
+}
+
+.estatus-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.apply-card-btn {
+  width: 100%;
+  margin: 0.15rem 0 0.55rem;
 }
 
 .col-toggle {

@@ -14,10 +14,11 @@ const props = defineProps<{
 const auth = useAuthStore()
 const ui = useUiStore()
 const store = useMovementsStore()
-const { reprintingId } = storeToRefs(store)
+const { reprintingId, applyingId } = storeToRefs(store)
 
 const canSeeJson = computed(() => auth.hasPermission('movements.response_json'))
 const showReprint = computed(() => store.canReprint(props.row))
+const showApply = computed(() => store.canApplyPayment(props.row))
 
 function prettyJson(value: unknown) {
   if (value == null || value === '') return ''
@@ -47,9 +48,24 @@ async function copyJson() {
 
 <template>
   <div class="detail">
-    <div v-if="showReprint" class="detail-actions">
-      <button class="btn btn-primary btn-sm" type="button" :disabled="reprintingId === row.id"
-        @click.stop="store.reprintTicket(row)">
+    <div v-if="showApply || showReprint" class="detail-actions">
+      <button
+        v-if="showApply"
+        class="btn btn-primary btn-sm"
+        type="button"
+        :disabled="applyingId === row.id"
+        @click.stop="store.applyPayment(row)"
+      >
+        Aplicar pago
+      </button>
+      <button
+        v-if="showReprint"
+        class="btn btn-sm"
+        :class="showApply ? 'btn-ghost' : 'btn-primary'"
+        type="button"
+        :disabled="reprintingId === row.id"
+        @click.stop="store.reprintTicket(row)"
+      >
         Reimprimir ticket
       </button>
     </div>

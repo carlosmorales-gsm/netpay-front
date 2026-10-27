@@ -37,6 +37,7 @@ export const useMovementsStore = defineStore('movements', () => {
   const userOptions = ref<MovementUserOption[]>([])
   const typeOptions = ref<MovementTypeOption[]>(MOVEMENT_TYPE_OPTIONS)
   const reprintingId = ref<number | null>(null)
+  const applyingId = ref<number | null>(null)
 
   const filters = reactive<MovementFilters>({
     usuarioId: '',
@@ -111,6 +112,14 @@ export const useMovementsStore = defineStore('movements', () => {
     return Boolean(row.folioNumber || row.orderId)
   }
 
+  function canApplyPayment(row: Movement) {
+    return (
+      row.tipoTransaccion === 1 &&
+      row.estatus?.key === 'approved' &&
+      row.estatus.label === 'Aprobado no aplicado'
+    )
+  }
+
   async function reprintTicket(row: Movement) {
     const ui = useUiStore()
     if (!canReprint(row)) return
@@ -140,6 +149,39 @@ export const useMovementsStore = defineStore('movements', () => {
       ui.error(getApiErrorMessage(err, 'No se pudo reimprimir el ticket'))
     } finally {
       reprintingId.value = null
+    }
+  }
+
+  async function applyPayment(row: Movement) {
+    const ui = useUiStore()
+    if (!canApplyPayment(row)) return
+
+    const ok = await ui.confirm({
+      title: 'Aplicar pago',
+      message:
+        'Se registrará el pago en Odoo con la misma lógica del cobro en terminal. No se vuelve a cobrar en la terminal.',
+      details: [
+        { label: 'Folio de venta', value: row.folioVenta },
+        { label: 'Order', value: row.orderId || '—' },
+        { label: 'Importe', value: money(row.importe) },
+        { label: 'Estatus', value: row.estatus?.label || 'Aprobado no aplicado' },
+      ],
+      confirmText: 'Aplicar pago',
+      cancelText: 'Cancelar',
+    })
+    if (!ok) return
+
+    applyingId.value = row.id
+    try {
+      await ui.withLoading(async () => {
+        const res = await movementsApi.applyPayment(row.id)
+        await fetchList()
+        ui.success(res.data?.message || 'Pago aplicado en Odoo')
+      })
+    } catch (err) {
+      ui.error(getApiErrorMessage(err, 'No se pudo aplicar el pago'))
+    } finally {
+      applyingId.value = null
     }
   }
 
@@ -233,11 +275,14 @@ export const useMovementsStore = defineStore('movements', () => {
     userOptions,
     typeOptions,
     reprintingId,
+    applyingId,
     init,
     fetchList,
     money,
     canReprint,
+    canApplyPayment,
     reprintTicket,
+    applyPayment,
     exportPdf,
     exportExcel,
     clearFilters,

@@ -57,6 +57,7 @@ Secciones actuales: `operacion`, `reportes`, `admin`. Pantallas: `terminals`, `r
 | Devoluciones / cancel NetPay | `modules/operacion/refunds/` → `GET /admin/refunds`, `POST /admin/refunds/:id/void` (Smart Accounts `isSmartAccounts`). |
 | Reversos / consultar folio | `modules/operacion/reverses/` → `GET /admin/reverses`, `POST /admin/reverses/:id/consult`. Confirma RV/PRV por folioNumber; no cobra. Permisos `reverses.view` / `reverses.manage`. |
 | Reimprimir ticket | Movimientos → `POST /admin/movements/:id/reprint` (cobros aplicados). El estatus de reverso se lee en `reprintModule` (`C`/`V`/`D`/`RV`/`PRV`), no en `responseCode`. Solo bajo demanda. |
+| Aplicar pago | Movimientos → `POST /admin/movements/:id/apply` solo si el estatus es **Aprobado no aplicado**. El front manda `X-Api-Key` (`VITE_API_KEY`). api-netpay la reenvía y **Odoo** la valida solo en `apply_approved_terminal_payment`, contra `sale_extensions.netpay_api_key`. Genera el `account.payment` con la misma lógica del cobro en terminal. Si esas cuotas ya tienen otro pago aplicado, no genera otro. No cobra de nuevo en la terminal. |
 
 Backend relacionado: `api-netpay` usa `API_ODOO` (debe apuntar a api-odoo-gsm, ej. `http://localhost:3006/`).
 

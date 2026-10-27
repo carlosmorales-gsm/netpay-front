@@ -37,6 +37,15 @@ export type ReprintResult = {
   transactionId?: number
 }
 
+export type ApplyPaymentResult = {
+  success?: boolean
+  alreadyExisted?: boolean
+  odooPaymentId?: number | null
+  odooPaymentName?: string | null
+  paymentOrderId?: number
+  message?: string
+}
+
 export type MovementsResponse = {
   items: Movement[]
   total: number
