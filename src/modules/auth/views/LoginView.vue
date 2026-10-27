@@ -9,7 +9,7 @@ const route = useRoute()
 
 const isDev = import.meta.env.DEV
 const email = ref(isDev ? 'admin@sanmartin.com.mx' : '')
-const password = ref(isDev ? 'AdminSM2026!' : '')
+const password = ref(isDev ? (import.meta.env.VITE_DEV_PASSWORD ?? '') : '')
 const localError = ref<string | null>(null)
 const showPassword = ref(false)
 

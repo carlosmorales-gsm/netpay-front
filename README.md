@@ -23,7 +23,6 @@ npm run dev
 ## Credenciales semilla (API)
 
 - Usuario: `admin@sanmartin.com.mx`
-- Contraseña: `AdminSM2026!`
 - Rol: Administrador
 
-El seed se crea al iniciar `api-netpay`.
+El seed se crea al iniciar `api-netpay`. La contraseña no se publica en este repo; pídela al equipo. En desarrollo puedes definir `VITE_DEV_PASSWORD` en tu `.env` local para autollenar el login.
