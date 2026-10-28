@@ -208,6 +208,345 @@ function stylesXml() {
 </styleSheet>`
 }
 
+function quoteSheet(name: string) {
+  return `'${name.replace(/'/g, "''")}'`
+}
+
+function uniqueLabels(rows: Array<Record<string, ExcelValue>>, key: string) {
+  const seen = new Set<string>()
+  const labels: string[] = []
+  for (const row of rows) {
+    const text = row[key] == null || row[key] === '' ? '' : String(row[key])
+    if (!text || text === '—' || seen.has(text)) continue
+    seen.add(text)
+    labels.push(text)
+  }
+  return labels
+}
+
+function countLabel(rows: Array<Record<string, ExcelValue>>, key: string, label: string) {
+  return rows.filter((row) => String(row[key] ?? '') === label).length
+}
+
+function sumLabel(
+  rows: Array<Record<string, ExcelValue>>,
+  key: string,
+  label: string,
+  amountKey: string,
+) {
+  return rows.reduce((sum, row) => {
+    if (String(row[key] ?? '') !== label) return sum
+    const amount = Number(row[amountKey])
+    return sum + (Number.isFinite(amount) ? amount : 0)
+  }, 0)
+}
+
+function formulaCell(ref: string, formula: string, cached: number, style: number) {
+  return `<c r="${ref}" s="${style}"><f>${escapeXml(formula)}</f><v>${cached}</v></c>`
+}
+
+function strCache(labels: string[]) {
+  const points = labels
+    .map((label, i) => `<c:pt idx="${i}"><c:v>${escapeXml(label)}</c:v></c:pt>`)
+    .join('')
+  return `<c:strCache><c:ptCount val="${labels.length}"/>${points}</c:strCache>`
+}
+
+function numCache(values: number[], format = 'General') {
+  const points = values
+    .map((value, i) => `<c:pt idx="${i}"><c:v>${value}</c:v></c:pt>`)
+    .join('')
+  return `<c:numCache><c:formatCode>${format}</c:formatCode><c:ptCount val="${values.length}"/>${points}</c:numCache>`
+}
+
+function chartTitle(text: string) {
+  return `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1400" b="1"/></a:pPr><a:r><a:rPr lang="es-MX" sz="1400" b="1"/><a:t>${escapeXml(text)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>`
+}
+
+function pieChartXml(title: string, catRef: string, valRef: string, labels: string[], values: number[]) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <c:date1904 val="0"/>
+  <c:roundedCorners val="0"/>
+  <c:chart>
+    ${chartTitle(title)}
+    <c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>
+    <c:plotArea>
+      <c:layout/>
+      <c:pieChart>
+        <c:varyColors val="1"/>
+        <c:ser>
+          <c:idx val="0"/>
+          <c:order val="0"/>
+          <c:tx><c:v>Operaciones</c:v></c:tx>
+          <c:cat><c:strRef><c:f>${escapeXml(catRef)}</c:f>${strCache(labels)}</c:strRef></c:cat>
+          <c:val><c:numRef><c:f>${escapeXml(valRef)}</c:f>${numCache(values)}</c:numRef></c:val>
+        </c:ser>
+        <c:dLbls>
+          <c:showLegendKey val="0"/>
+          <c:showVal val="0"/>
+          <c:showCatName val="0"/>
+          <c:showSerName val="0"/>
+          <c:showPercent val="1"/>
+        </c:dLbls>
+      </c:pieChart>
+    </c:plotArea>
+    <c:plotVisOnly val="1"/>
+  </c:chart>
+</c:chartSpace>`
+}
+
+function columnChartXml(
+  title: string,
+  catRef: string,
+  valRef: string,
+  seriesName: string,
+  labels: string[],
+  values: number[],
+) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <c:date1904 val="0"/>
+  <c:roundedCorners val="0"/>
+  <c:chart>
+    ${chartTitle(title)}
+    <c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>
+    <c:plotArea>
+      <c:layout/>
+      <c:barChart>
+        <c:barDir val="col"/>
+        <c:grouping val="clustered"/>
+        <c:varyColors val="1"/>
+        <c:ser>
+          <c:idx val="0"/>
+          <c:order val="0"/>
+          <c:tx><c:v>${escapeXml(seriesName)}</c:v></c:tx>
+          <c:cat><c:strRef><c:f>${escapeXml(catRef)}</c:f>${strCache(labels)}</c:strRef></c:cat>
+          <c:val><c:numRef><c:f>${escapeXml(valRef)}</c:f>${numCache(values, '&quot;$&quot;#,##0.00')}</c:numRef></c:val>
+        </c:ser>
+        <c:axId val="111"/>
+        <c:axId val="222"/>
+      </c:barChart>
+      <c:catAx>
+        <c:axId val="111"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="b"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:crossAx val="222"/>
+      </c:catAx>
+      <c:valAx>
+        <c:axId val="222"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="l"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:numFmt formatCode="&quot;$&quot;#,##0" sourceLinked="0"/>
+        <c:crossAx val="111"/>
+      </c:valAx>
+    </c:plotArea>
+    <c:plotVisOnly val="1"/>
+  </c:chart>
+</c:chartSpace>`
+}
+
+function drawingXml(
+  charts: Array<{ id: number; fromCol: number; toCol: number; fromRow: number; toRow: number }>,
+) {
+  const anchors = charts
+    .map(
+      (chart) => `<xdr:twoCellAnchor>
+      <xdr:from><xdr:col>${chart.fromCol}</xdr:col><xdr:colOff>120000</xdr:colOff><xdr:row>${chart.fromRow}</xdr:row><xdr:rowOff>80000</xdr:rowOff></xdr:from>
+      <xdr:to><xdr:col>${chart.toCol}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${chart.toRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
+      <xdr:graphicFrame macro="">
+        <xdr:nvGraphicFramePr>
+          <xdr:cNvPr id="${chart.id}" name="Gráfico ${chart.id}"/>
+          <xdr:cNvGraphicFramePr/>
+        </xdr:nvGraphicFramePr>
+        <xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>
+        <a:graphic>
+          <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+            <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId${chart.id}"/>
+          </a:graphicData>
+        </a:graphic>
+      </xdr:graphicFrame>
+      <xdr:clientData/>
+    </xdr:twoCellAnchor>`,
+    )
+    .join('')
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  ${anchors}
+</xdr:wsDr>`
+}
+
+function buildIndicatorsSheet(input: {
+  dataSheet: string
+  subtitle: string
+  columns: ExcelColumn[]
+  rows: Array<Record<string, ExcelValue>>
+  dataStart: number
+  dataEnd: number
+}) {
+  const estatusCol = input.columns.findIndex((col) => col.key === 'estatus')
+  const importeCol = input.columns.findIndex((col) => col.key === 'importe')
+  const tipoCol = input.columns.findIndex((col) => col.key === 'tipo')
+  if (estatusCol < 0 || importeCol < 0 || !input.rows.length) return null
+
+  const name = input.dataSheet === 'Indicadores' ? 'Indicadores 2' : 'Indicadores'
+  const data = quoteSheet(input.dataSheet)
+  const estatusRange = `${data}!$${colLetter(estatusCol + 1)}$${input.dataStart}:$${colLetter(estatusCol + 1)}$${input.dataEnd}`
+  const importeRange = `${data}!$${colLetter(importeCol + 1)}$${input.dataStart}:$${colLetter(importeCol + 1)}$${input.dataEnd}`
+  const tipoRange =
+    tipoCol >= 0
+      ? `${data}!$${colLetter(tipoCol + 1)}$${input.dataStart}:$${colLetter(tipoCol + 1)}$${input.dataEnd}`
+      : ''
+
+  const estatus = uniqueLabels(input.rows, 'estatus')
+  const tipos = tipoCol >= 0 ? uniqueLabels(input.rows, 'tipo') : []
+  const totalOps = input.rows.length
+  const totalImporte = input.rows.reduce((sum, row) => {
+    const amount = Number(row.importe)
+    return sum + (Number.isFinite(amount) ? amount : 0)
+  }, 0)
+  const aplicado = sumLabel(input.rows, 'estatus', 'Aplicado', 'importe')
+
+  const firstCat = 8
+  const estatusEnd = estatus.length ? firstCat + estatus.length - 1 : firstCat
+  const tipoEnd = tipos.length ? firstCat + tipos.length - 1 : firstCat
+
+  const catCount = Math.max(estatus.length, tipos.length)
+  const catRows = Array.from({ length: catCount }, (_, index) => {
+    const row = firstCat + index
+    const cells: string[] = []
+    const estatusLabel = estatus[index]
+    if (estatusLabel) {
+      const ops = countLabel(input.rows, 'estatus', estatusLabel)
+      const amount = sumLabel(input.rows, 'estatus', estatusLabel, 'importe')
+      cells.push(
+        inlineCell(`A${row}`, estatusLabel, 4),
+        formulaCell(`B${row}`, `COUNTIF(${estatusRange},A${row})`, ops, 4),
+        formulaCell(`C${row}`, `SUMIF(${estatusRange},A${row},${importeRange})`, amount, 6),
+      )
+    }
+    const tipoLabel = tipos[index]
+    if (tipoLabel) {
+      const ops = countLabel(input.rows, 'tipo', tipoLabel)
+      const amount = sumLabel(input.rows, 'tipo', tipoLabel, 'importe')
+      cells.push(
+        inlineCell(`E${row}`, tipoLabel, 4),
+        formulaCell(`F${row}`, `COUNTIF(${tipoRange},E${row})`, ops, 4),
+        formulaCell(`G${row}`, `SUMIF(${tipoRange},E${row},${importeRange})`, amount, 6),
+      )
+    }
+    return `<row r="${row}" ht="18" customHeight="1">${cells.join('')}</row>`
+  }).join('')
+
+  const rowsXml = [
+    `<row r="1" ht="24" customHeight="1">${inlineCell('A1', 'Indicadores', 1)}</row>`,
+    `<row r="2" ht="18" customHeight="1">${inlineCell('A2', input.subtitle, 2)}</row>`,
+    `<row r="4" ht="18" customHeight="1">${inlineCell('A4', 'Operaciones', 3)}${formulaCell('B4', `COUNTA(${estatusRange})`, totalOps, 4)}${inlineCell('D4', 'Importe total', 3)}${formulaCell('E4', `SUM(${importeRange})`, totalImporte, 6)}${inlineCell('G4', 'Importe aplicado', 3)}${formulaCell('H4', `SUMIF(${estatusRange},"Aplicado",${importeRange})`, aplicado, 6)}</row>`,
+    `<row r="6" ht="18" customHeight="1">${inlineCell('A6', 'Los conteos y los importes salen de la hoja de movimientos.', 2)}</row>`,
+    `<row r="7" ht="20" customHeight="1">${inlineCell('A7', 'Estatus', 3)}${inlineCell('B7', 'Operaciones', 3)}${inlineCell('C7', 'Importe', 3)}${tipos.length ? `${inlineCell('E7', 'Tipo', 3)}${inlineCell('F7', 'Operaciones', 3)}${inlineCell('G7', 'Importe', 3)}` : ''}</row>`,
+    catRows,
+  ].join('')
+
+  const lastRow = Math.max(estatusEnd, tipoEnd, 8)
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <dimension ref="A1:H${lastRow + 36}"/>
+  <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="16"/>
+  <cols>
+    <col min="1" max="1" width="28" customWidth="1"/>
+    <col min="2" max="3" width="16" customWidth="1"/>
+    <col min="4" max="4" width="18" customWidth="1"/>
+    <col min="5" max="5" width="24" customWidth="1"/>
+    <col min="6" max="8" width="16" customWidth="1"/>
+  </cols>
+  <sheetData>${rowsXml}</sheetData>
+  <mergeCells count="2">
+    <mergeCell ref="A1:H1"/>
+    <mergeCell ref="A2:H2"/>
+  </mergeCells>
+  <pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>
+  ${estatus.length || tipos.length ? '<drawing r:id="rId1"/>' : ''}
+</worksheet>`
+
+  const charts: string[] = []
+  const anchors: Array<{ id: number; fromCol: number; toCol: number; fromRow: number; toRow: number }> = []
+  const chartStart = lastRow + 2
+  if (estatus.length) {
+    charts.push(
+      pieChartXml(
+        'Operaciones por estatus',
+        `${quoteSheet(name)}!$A$${firstCat}:$A$${estatusEnd}`,
+        `${quoteSheet(name)}!$B$${firstCat}:$B$${estatusEnd}`,
+        estatus,
+        estatus.map((label) => countLabel(input.rows, 'estatus', label)),
+      ),
+    )
+    anchors.push({ id: charts.length, fromCol: 0, toCol: 8, fromRow: chartStart - 1, toRow: chartStart + 15 })
+    charts.push(
+      columnChartXml(
+        'Importe por estatus',
+        `${quoteSheet(name)}!$A$${firstCat}:$A$${estatusEnd}`,
+        `${quoteSheet(name)}!$C$${firstCat}:$C$${estatusEnd}`,
+        'Importe',
+        estatus,
+        estatus.map((label) => sumLabel(input.rows, 'estatus', label, 'importe')),
+      ),
+    )
+    anchors.push({ id: charts.length, fromCol: 8, toCol: 16, fromRow: chartStart - 1, toRow: chartStart + 15 })
+  }
+  if (tipos.length) {
+    charts.push(
+      columnChartXml(
+        'Importe por tipo',
+        `${quoteSheet(name)}!$E$${firstCat}:$E$${tipoEnd}`,
+        `${quoteSheet(name)}!$G$${firstCat}:$G$${tipoEnd}`,
+        'Importe',
+        tipos,
+        tipos.map((label) => sumLabel(input.rows, 'tipo', label, 'importe')),
+      ),
+    )
+    anchors.push({
+      id: charts.length,
+      fromCol: 0,
+      toCol: 16,
+      fromRow: chartStart + 16,
+      toRow: chartStart + 32,
+    })
+  }
+
+  const files: Array<{ path: string; xml: string }> = [{ path: 'xl/worksheets/sheet2.xml', xml: sheetXml }]
+  if (charts.length) {
+    files.push({ path: 'xl/drawings/drawing1.xml', xml: drawingXml(anchors) })
+    files.push({
+      path: 'xl/drawings/_rels/drawing1.xml.rels',
+      xml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${charts.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${index + 1}.xml"/>`).join('')}
+</Relationships>`,
+    })
+    files.push({
+      path: 'xl/worksheets/_rels/sheet2.xml.rels',
+      xml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+</Relationships>`,
+    })
+    charts.forEach((xml, index) => {
+      files.push({ path: `xl/charts/chart${index + 1}.xml`, xml })
+    })
+  }
+
+  return { name, charts, files }
+}
+
 export function downloadTableExcel(options: {
   title: string
   filename: string
@@ -310,25 +649,64 @@ export function downloadTableExcel(options: {
   <tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="0" showColumnStripes="0"/>
 </table>`
 
+  const indicators = buildIndicatorsSheet({
+    dataSheet: sheetName,
+    subtitle,
+    columns,
+    rows: options.rows,
+    dataStart,
+    dataEnd: options.rows.length ? dataStart + options.rows.length - 1 : dataStart,
+  })
+
   const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
     <sheet name="${escapeXml(sheetName)}" sheetId="1" r:id="rId1"/>
+    ${indicators ? `<sheet name="${escapeXml(indicators.name)}" sheetId="2" r:id="rId3"/>` : ''}
   </sheets>
 </workbook>`
 
-  const blob = zipStore([
+  const contentOverrides = [
+    `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`,
+    `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`,
+    `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`,
+    `<Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>`,
+  ]
+  if (indicators) {
+    contentOverrides.push(
+      `<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`,
+    )
+    indicators.charts.forEach((_, index) => {
+      contentOverrides.push(
+        `<Override PartName="/xl/charts/chart${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`,
+      )
+    })
+    if (indicators.charts.length) {
+      contentOverrides.push(
+        `<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`,
+      )
+    }
+  }
+
+  const workbookRels = [
+    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>`,
+    `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`,
+  ]
+  if (indicators) {
+    workbookRels.push(
+      `<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>`,
+    )
+  }
+
+  const files: Array<{ path: string; xml: string }> = [
     {
       path: '[Content_Types].xml',
       xml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-  <Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>
+  ${contentOverrides.join('')}
 </Types>`,
     },
     {
@@ -343,8 +721,7 @@ export function downloadTableExcel(options: {
       path: 'xl/_rels/workbook.xml.rels',
       xml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  ${workbookRels.join('')}
 </Relationships>`,
     },
     { path: 'xl/styles.xml', xml: stylesXml() },
@@ -357,7 +734,10 @@ export function downloadTableExcel(options: {
 </Relationships>`,
     },
     { path: 'xl/tables/table1.xml', xml: tableXml },
-  ])
+  ]
+  if (indicators) files.push(...indicators.files)
+
+  const blob = zipStore(files)
 
   const name = options.filename.toLowerCase().endsWith('.xlsx')
     ? options.filename
