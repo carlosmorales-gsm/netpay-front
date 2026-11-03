@@ -1,6 +1,12 @@
 import { http } from '@/shared/api/http'
 import type { OdooUserLookup } from '@/shared/types/odooUser'
-import type { Terminal, TerminalPayload, TerminalUserOption } from '../types'
+import type {
+  Terminal,
+  TerminalLock,
+  TerminalLockRelease,
+  TerminalPayload,
+  TerminalUserOption,
+} from '../types'
 
 export const terminalsApi = {
   list(params: Record<string, string | boolean>) {
@@ -25,5 +31,11 @@ export const terminalsApi = {
   },
   testCharge(id: number) {
     return http.post(`/admin/terminals/${id}/test-charge`)
+  },
+  listLocks() {
+    return http.get<TerminalLock[]>('/admin/terminals/locks')
+  },
+  releaseLocks() {
+    return http.post<TerminalLockRelease>('/admin/terminals/locks/release')
   },
 }

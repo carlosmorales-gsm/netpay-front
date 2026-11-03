@@ -32,6 +32,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
   const showUserSuggestions = ref(false)
   const testingId = ref<number | null>(null)
   const togglingId = ref<number | null>(null)
+  const releasingLocks = ref(false)
 
   const filters = reactive<TerminalFilters>({
     companyId: '',
@@ -387,6 +388,57 @@ export const useTerminalsStore = defineStore('terminals', () => {
     }
   }
 
+  async function releaseStuckTerminals() {
+    const ui = useUiStore()
+    if (releasingLocks.value) return
+    releasingLocks.value = true
+    error.value = null
+    try {
+      const { data } = await terminalsApi.listLocks()
+      const ok = await ui.confirm({
+        title: 'Liberar terminales',
+        message: data.length
+          ? 'Se sueltan estas terminales y las órdenes de Odoo que se quedaron en curso por el timeout.'
+          : 'Se liberan las órdenes de Odoo que se quedaron en curso por el timeout.',
+        details: data.map((lock) => ({
+          label: `Serie ${lock.serialNumber}`,
+          value: `Tienda ${lock.storeId}`,
+        })),
+        confirmText: 'Liberar',
+        danger: true,
+      })
+      if (!ok) return
+      const released = await terminalsApi.releaseLocks()
+      const count = released.data.released
+      const odooCount = released.data.odooReleased
+      if (released.data.odooError) {
+        ui.error(released.data.odooError)
+      }
+      if (!count && !odooCount && !released.data.odooError) {
+        ui.info('No había cobros de terminal en curso')
+        return
+      }
+      const parts: string[] = []
+      if (count) {
+        parts.push(count === 1 ? 'Se liberó 1 terminal' : `Se liberaron ${count} terminales`)
+      }
+      if (odooCount) {
+        parts.push(
+          odooCount === 1
+            ? 'Se liberó 1 orden en Odoo'
+            : `Se liberaron ${odooCount} órdenes en Odoo`,
+        )
+      }
+      if (parts.length) ui.success(parts.join('. '))
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, 'No se pudieron liberar las terminales')
+      error.value = msg
+      ui.error(msg)
+    } finally {
+      releasingLocks.value = false
+    }
+  }
+
   function exportPdf() {
     if (!items.value.length) return
     const empresas = useEmpresasStore()
@@ -437,6 +489,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
     showUserSuggestions,
     testingId,
     togglingId,
+    releasingLocks,
     init,
     fetchList,
     onNombreUsuarioInput,
@@ -452,6 +505,7 @@ export const useTerminalsStore = defineStore('terminals', () => {
     save,
     toggleActivo,
     testCharge,
+    releaseStuckTerminals,
     exportPdf,
   }
 })

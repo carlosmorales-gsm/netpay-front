@@ -23,6 +23,20 @@ export type TerminalUserOption = {
   nombreUsuario: string
 }
 
+export type TerminalLock = {
+  serialNumber: string
+  storeId: string
+  operation: string
+  lockedAt: string
+}
+
+export type TerminalLockRelease = {
+  released: number
+  terminals: TerminalLock[]
+  odooReleased: number
+  odooError: string | null
+}
+
 export type TerminalFilters = {
   companyId: string
   usuarioId: string

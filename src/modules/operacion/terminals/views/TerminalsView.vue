@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/modules/auth/stores/auth'
+import { isSystemAdminRole } from '@/shared/utils/systemAdmin'
 import { useTerminalsStore } from '../stores/terminals'
 import TerminalsList from '../components/TerminalsList.vue'
 import TerminalFormModal from '../components/TerminalFormModal.vue'
@@ -9,7 +10,8 @@ import TerminalOdooSearchModal from '../components/TerminalOdooSearchModal.vue'
 
 const auth = useAuthStore()
 const store = useTerminalsStore()
-const { items } = storeToRefs(store)
+const { items, releasingLocks } = storeToRefs(store)
+const isAdmin = () => isSystemAdminRole(auth.user?.roleNombre)
 
 onMounted(() => store.init())
 </script>
@@ -29,6 +31,15 @@ onMounted(() => store.init())
           @click="store.exportPdf()"
         >
           Descargar PDF
+        </button>
+        <button
+          v-if="isAdmin()"
+          class="btn btn-ghost"
+          type="button"
+          :disabled="releasingLocks"
+          @click="store.releaseStuckTerminals()"
+        >
+          Liberar terminales
         </button>
         <button
           v-if="auth.hasPermission('terminals.manage')"
